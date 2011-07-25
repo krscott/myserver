@@ -84,9 +84,17 @@ class ServerManager
   end
   
   def backup()
-    server.before_backup
-    putout "Creating backup..."
-    server.after_backup
+    putout "Preparing to create backup..."
+    ready = server.before_backup
+    #puts "READY: #{Server.new.before_backup}, #{MockServer.new.before_backup}"
+    if ready
+      putout "Creating backup..."
+      #backup_files
+      server.after_backup
+    else
+      putout "#{server.class} failed to prepare for backup."
+    end
+    return ready
   end
   
   def restore()

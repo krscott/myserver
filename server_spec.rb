@@ -31,7 +31,8 @@ class MockServer < Server
   
   def self.mock_response(*args)
     args.each do |m|
-      define_method(m) do |*a|
+      define_method(m) do |*a, &b|
+        super(*a, &b)
         @@method_calls << m
         return (@@method_out[m] or @@out)
       end
@@ -42,13 +43,14 @@ class MockServer < Server
 end
 
 class DummyServer < MockServer
-  @@instance_vars = [:start, :stop, :before_backup, :after_backup].map{|x|"enable_#{x}".to_sym}
+  @@server_methods = [:start, :stop, :before_backup, :after_backup]
+  @@instance_vars = @@server_methods.map{|x|"enable_#{x}".to_sym}
   attr_accessor :running, *@@instance_vars
     
-  (@@instance_vars).each do |var|
-    define_method(var) do
-      super
-      return instance_variable_get("@#{var}")
+  @@server_methods.each do |m|
+    define_method(m) do |*args, &block|
+      super(*args, &block)
+      return instance_variable_get("@enable_#{m}")
     end
   end
   
@@ -142,7 +144,7 @@ describe ServerManager, "#new" do
   end
 end
 
-describe ServerManager, " running MockServer" do
+describe ServerManager, " (running MockServer)" do
   before do
     MockServer.clear
     @manager = ServerManager.new(MockServer.new(SERVER_OPTS))
@@ -280,7 +282,9 @@ describe ServerManager, " running MockServer" do
   end
   
   it "should let Server know when backup is complete" do
+    MockServer.set(:before_backup, true)
     @manager.backup
+    @manager.server.before_backup.should be_true
     MockServer.calls.include?(:after_backup).should be_true
   end
   
@@ -301,6 +305,7 @@ end
 
 describe ServerManager, " (running DummyServer)" do
   before do
+    DummyServer.clear
     @server = DummyServer.new(SERVER_OPTS)
     @manager = ServerManager.new(@server)
   end
@@ -378,11 +383,20 @@ describe ServerManager, " (running DummyServer)" do
     @manager.running?.should be_true
   end
   
+  it "should not backup if Server#before_backup returns false" do
+    @server.running = true
+    @server.enable_before_backup = false
+    @manager.backup
+    DummyServer.calls.include?(:before_backup).should be_true
+    DummyServer.calls.include?(:after_backup).should be_false
+    @manager.running?.should be_true
+  end
+  
   it "should call #stop and #start as necessary when restoring" do
     @server.running = true
     @manager.restore
-    DummyServer.calls.include?(:before_backup).should be_true
-    DummyServer.calls.include?(:after_backup).should be_true
+    DummyServer.calls.include?(:stop).should be_true
+    DummyServer.calls.include?(:start).should be_true
     @manager.running?.should be_true
   end
 end
