@@ -1,12 +1,15 @@
 SERVER_OPTS = {
+  verbose: false,
+  quiet: true,
   service: "server_executable",
   path: "#{Dir.pwd}",
   backup_dir: "server_backup",
 }
 
 class Server
-  attr_reader *SERVER_OPTS.keys
+  attr_reader :output, *SERVER_OPTS.keys
   def initialize(h={})
+    @output = ""
     h.each do |k,v|
       instance_variable_set "@#{k}", v
     end
@@ -31,6 +34,17 @@ class Server
   def after_backup()
     true
   end
+  
+  def dumpout()
+    out = "#{output}"
+    output.clear
+    return out
+  end
+  
+  def putout(str)
+    puts "#{str}" unless quiet
+    output << "#{str}\n"
+  end
 end
 
 class ServerManager
@@ -42,7 +56,7 @@ class ServerManager
     end
   end
   
-  attr_reader :server, :output
+  attr_reader :server
   server_attr_reader :service, :path, :backup_dir
   
   def initialize(server, h={})
@@ -58,6 +72,7 @@ class ServerManager
   end
   
   def start()
+    putout "Attempting to start #{service}."
     if running?
       putout "#{service} is already running."
     else
@@ -69,6 +84,7 @@ class ServerManager
   alias :run :start
   
   def stop()
+    putout "Attempting to stop #{service}."
     if running?
       putout "Stopping #{service}..."
       server.stop
@@ -89,7 +105,7 @@ class ServerManager
     #puts "READY: #{Server.new.before_backup}, #{MockServer.new.before_backup}"
     if ready
       putout "Creating backup..."
-      #backup_files
+      backup_files
       server.after_backup
     else
       putout "#{server.class} failed to prepare for backup."
@@ -100,6 +116,7 @@ class ServerManager
   def restore()
     server.stop
     putout "Restoring from backup..."
+    restore_files
     server.start
   end
   
@@ -113,12 +130,22 @@ class ServerManager
   end
   
   def dumpout()
-    out = "#{output}"
-    output.clear
-    return out
+    return "#{server.dumpout}"
   end
   
   def putout(str)
-    output << "#{str}\n"
+    server.putout str
+  end
+  
+  def output()
+    "#{server.output}"
+  end
+  
+  private
+  
+  def backup_files
+  end
+  
+  def restore_files
   end
 end

@@ -97,6 +97,32 @@ describe Server do
     end
   end
   
+  it "should be able to store output" do
+    @server.should respond_to(:output)
+  end
+  
+  it "should have a verbose (most stdout) and quiet (no stdout) option" do
+    @server.should respond_to(:verbose)
+    @server.should respond_to(:quiet)
+  end
+  
+  it "should initially have an empty output string" do
+    @server.output.is_a?(String).should be_true
+    @server.output.empty?.should be_true
+  end
+  
+  it "should be able to put out strings as output (with \\n termination)" do
+    @server.should respond_to(:putout)
+    @server.putout "foo\nbar"
+    @server.output.should == "foo\nbar\n"
+  end
+  
+  it "should be able to dump (and clear) output" do
+    @server.putout "foo\nbar"
+    @server.dumpout.should == "foo\nbar\n"
+    @server.output.empty?.should be_true
+  end
+  
   it "should know if it's running" do
     @server.should respond_to( :running? )
   end
@@ -154,21 +180,18 @@ describe ServerManager, " (running MockServer)" do
     @manager.should respond_to(:output)
   end
   
-  it "should initially have an empty output string" do
-    @manager.output.is_a?(String).should be_true
-    @manager.output.empty?.should be_true
-  end
-  
-  it "should be able to put out strings as output (with \\n termination)" do
+  it "should give #putout output to child Server#putout" do
     @manager.should respond_to(:putout)
     @manager.putout "foo\nbar"
     @manager.output.should == "foo\nbar\n"
+    @manager.server.output.should == "foo\nbar\n"
   end
   
   it "should be able to dump (and clear) output" do
     @manager.putout "foo\nbar"
     @manager.dumpout.should == "foo\nbar\n"
     @manager.output.empty?.should be_true
+    @manager.server.output.empty?.should be_true
   end
   
   it "should store a Server instance" do
