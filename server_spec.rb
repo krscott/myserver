@@ -101,9 +101,9 @@ describe Server do
     @server.should respond_to(:output)
   end
   
-  it "should have a verbose (most stdout) and quiet (no stdout) option" do
-    @server.should respond_to(:verbose)
-    @server.should respond_to(:quiet)
+  it "should have a output_mode option, and be :quiet by default" do
+    @server.should respond_to(:output_mode)
+    @server.output_mode.should == :quiet
   end
   
   it "should initially have an empty output string" do
@@ -173,11 +173,28 @@ end
 describe ServerManager, " (running MockServer)" do
   before do
     MockServer.clear
-    @manager = ServerManager.new(MockServer.new(SERVER_OPTS))
+    @server = MockServer.new(SERVER_OPTS)
+    @manager = ServerManager.new(@server, SERVER_MANAGER_OPTS)
   end
   
   it "should be able to store output" do
     @manager.should respond_to(:output)
+  end
+  
+  it "should have an output mode option" do
+    @server.should respond_to(:output_mode)
+    #@server.output_mode.should == :quiet
+  end
+  
+  it "should initialize Server with same output mode" do
+    @manager.output_mode.should == @manager.server.output_mode
+  end
+  
+  it "should relay output mode changes to Server" do
+    @manager.output_mode = :quiet
+    @manager.output_mode.should == @manager.server.output_mode
+    @manager.output_mode = :verbose
+    @manager.output_mode.should == @manager.server.output_mode
   end
   
   it "should give #putout output to child Server#putout" do
@@ -330,7 +347,7 @@ describe ServerManager, " (running DummyServer)" do
   before do
     DummyServer.clear
     @server = DummyServer.new(SERVER_OPTS)
-    @manager = ServerManager.new(@server)
+    @manager = ServerManager.new(@server, SERVER_MANAGER_OPTS)
   end
   
   it "should initally not be running" do

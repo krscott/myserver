@@ -1,15 +1,19 @@
 SERVER_OPTS = {
-  verbose: false,
-  quiet: true,
   service: "server_executable",
   path: "#{Dir.pwd}",
   backup_dir: "server_backup",
 }
 
+SERVER_MANAGER_OPTS = {
+  output_mode: :quiet
+}
+
 class Server
+  attr_accessor :output_mode
   attr_reader :output, *SERVER_OPTS.keys
   def initialize(h={})
     @output = ""
+    @output_mode = :quiet
     h.each do |k,v|
       instance_variable_set "@#{k}", v
     end
@@ -42,7 +46,7 @@ class Server
   end
   
   def putout(str)
-    puts "#{str}" unless quiet
+    puts "#{str}" unless output_mode == :quiet
     output << "#{str}\n"
   end
 end
@@ -56,6 +60,7 @@ class ServerManager
     end
   end
   
+  attr_accessor *SERVER_MANAGER_OPTS.keys
   attr_reader :server
   server_attr_reader :service, :path, :backup_dir
   
@@ -65,6 +70,7 @@ class ServerManager
       instance_variable_set "@#{k}", v
     end
     @server = server
+    @server.output_mode = @output_mode
   end
   
   def running?()
@@ -139,6 +145,11 @@ class ServerManager
   
   def output()
     "#{server.output}"
+  end
+  
+  def output_mode=(mode)
+    @output_mode = mode
+    server.output_mode = mode
   end
   
   private
