@@ -15,9 +15,9 @@ module MyServer
   }
 
   SERVER_MANAGER_OPTS = {
-    data_dir: "#{BASE_DIR}/data",
-    backup_dir: "#{BASE_DIR}/backup",
-    update_dir: "#{BASE_DIR}/update",
+    data_dir: "data",
+    backup_dir: "backup",
+    update_dir: "update",
     update_name: "server_update",
     update_url: nil,
   }
@@ -119,11 +119,25 @@ module MyServer
       end
       @server = server
       
+      @path = @server.path
+      
       refresh_timestamp
     end
     
     def refresh_timestamp()
       @timestamp = MyFileUtils.timestamp
+    end
+    
+    def data_path()
+      "#{@path}/#{@data_dir}"
+    end
+    
+    def update_path()
+      "#{@path}/#{@update_dir}"
+    end
+    
+    def backup_path()
+      "#{@path}/#{@backup_dir}"
     end
     
     def running?()
@@ -189,7 +203,7 @@ module MyServer
       return result
     end
     
-    def restore(match_file=/#{File.basename(@data_dir)}/)
+    def restore(match_file=/#{File.basename(data_path)}/)
       result = false
       was_running = running?
       if stop
@@ -264,7 +278,7 @@ module MyServer
     end
     
     def data_changed?()
-      d = MyFileUtils::DirectoryManager.new("#{@data_dir}")
+      d = MyFileUtils::DirectoryManager.new("#{data_path}")
       m = MyFileUtils::FileManager.new(file_backup_md5)
       @md5sum = d.md5sum
       if m.exists? and m.read == @md5sum
@@ -287,7 +301,7 @@ module MyServer
     end
     
     def file_backup_md5()
-      "#{@backup_dir}/#{File.basename(@data_dir)}#{MD5SUM_SUFFIX}"
+      "#{backup_path}/#{File.basename(data_path)}#{MD5SUM_SUFFIX}"
     end
     
     private
@@ -307,31 +321,31 @@ module MyServer
     end
     
     def backup_files()
-      if !File.directory?(@data_dir)
-        puterr "#{@data_dir} does not exist"
+      if !File.directory?(data_path)
+        puterr "#{data_path} does not exist"
         return false
       end
-      data = MyFileUtils::DirectoryManager.new(@data_dir)
-      @last_backup = data.create_backup(@backup_dir, @timestamp)
+      data = MyFileUtils::DirectoryManager.new(data_path)
+      @last_backup = data.create_backup(backup_path, @timestamp)
       return @last_backup
     end
     
     def restore_files(match_file=//)
-      if !File.directory?(@data_dir)
-        puterr "#{@data_dir} does not exist"
+      if !File.directory?(data_path)
+        puterr "#{data_path} does not exist"
         return false
-      elsif !File.directory?(@backup_dir)
-        puterr "#{@backup_dir} does not exist"
+      elsif !File.directory?(backup_path)
+        puterr "#{backup_path} does not exist"
         return false
       end
-      data = MyFileUtils::DirectoryManager.new(@data_dir)
-      @last_restore = data.restore_backup(@backup_dir, match_file)
+      data = MyFileUtils::DirectoryManager.new(data_path)
+      @last_restore = data.restore_backup(backup_path, match_file)
       return @last_restore
     end
     
     def fetch_update()
-      return nil if !File.exists?("#{@update_dir}/#{@update_name}")
-      return "#{@update_dir}/#{@update_name}"
+      return nil if !File.exists?("#{update_path}/#{@update_name}")
+      return "#{update_path}/#{@update_name}"
     end
     
     def service_matches?(file)
@@ -343,21 +357,21 @@ module MyServer
     def update_service(update_file)
       srvc = MyFileUtils::FileManager.new("#{@server.path}/#{@server.service}")
       
-      if !File.directory?(@data_dir)
-        puterr "#{@data_dir} does not exist"
+      if !File.directory?(data_path)
+        puterr "#{data_path} does not exist"
         return false
-      elsif !File.directory?(@backup_dir)
-        puterr "#{@backup_dir} does not exist"
+      elsif !File.directory?(backup_path)
+        puterr "#{backup_path} does not exist"
         return false
-      elsif !File.directory?(@update_dir)
-        puterr "#{@update_dir} does not exist"
+      elsif !File.directory?(update_path)
+        puterr "#{update_path} does not exist"
         return false
       elsif !srvc.exists?
         puterr "Service #{srvc.path} does not exist"
         return false
       end
       
-      @old_service = "#{@backup_dir}/#{server.service}#{MyFileUtils::BACKUP_SEPARATOR}#{@timestamp}"
+      @old_service = "#{backup_path}/#{server.service}#{MyFileUtils::BACKUP_SEPARATOR}#{@timestamp}"
       old_srvc = MyFileUtils::FileManager.new(@old_service)
       old_srvc.update(srvc.path)
       srvc.update("#{update_file}")

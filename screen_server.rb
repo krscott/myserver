@@ -6,9 +6,13 @@ module MyServer
     
     def initialize(h={})
       super
-      @service = h[:service]
-      @sockname = (h[:sockname] or self.class.to_s)
-      @window = (h[:window] or @sockname)
+      @sockname ||= (self.class.to_s
+      @window ||= @sockname
+    end
+    
+    def start()
+      system invocation
+      return running?
     end
     
     def service()
@@ -27,6 +31,10 @@ module MyServer
     end
     
     private
+    
+    def invocation()
+      ""
+    end
     
     def screen_running?()
       system "screen -ls | grep #{@sockname} > /dev/null"
