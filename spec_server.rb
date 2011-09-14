@@ -2,7 +2,8 @@
 CLEAN_AFTER = true
 
 require_relative 'server.rb'
-require_relative 'myruby.rb'
+require_relative 'myfileutils.rb'
+require_relative 'myenum.rb'
 
 class Incrementor
   def next()
@@ -535,8 +536,8 @@ describe MyServer::ServerManager do
       
       before do
         @data_basename = "foo/bar/baz.txt"
-        @data_file = MyRuby::FileManager.new("#{@manager.data_dir}/#{@data_basename}")
-        @chaos_str = "#{MyRuby.timestamp} #{INCR.next}"
+        @data_file = MyFileUtils::FileManager.new("#{@manager.data_dir}/#{@data_basename}")
+        @chaos_str = "#{MyFileUtils.timestamp} #{INCR.next}"
         @data_text = "foo bar #{@chaos_str}"
         @data_file.write(@data_text)
         @timestamp = @manager.timestamp
@@ -549,21 +550,21 @@ describe MyServer::ServerManager do
         
         it "should successfully backup" do
           @manager.backup.should be_true
-          @backup_file = MyRuby::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
+          @backup_file = MyFileUtils::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
           @backup_file.read.should == @data_text
           @backup_file.read.should == @data_file.read
         end
         
         it "should create separate backups for each call" do
           @manager.backup.should be_true
-          @backup_file = MyRuby::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
+          @backup_file = MyFileUtils::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
           @backup_file.read.should == @data_text
           @backup_file.read.should == @data_file.read
           
           @data_text = "baz qux #{@chaos_str}"
           @data_file.write(@data_text)
           @manager.backup.should be_true
-          @backup_file2 = MyRuby::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
+          @backup_file2 = MyFileUtils::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
           @backup_file2.should_not == @backup_file
           @backup_file2.read.should == @data_text
           @backup_file2.read.should == @data_file.read
@@ -571,12 +572,12 @@ describe MyServer::ServerManager do
         
         it "should not create a backup if no data has changed" do
           @manager.backup.should be_true
-          @backup_file = MyRuby::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
+          @backup_file = MyFileUtils::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
           @backup_file.read.should == @data_text
           @backup_file.read.should == @data_file.read
           
           @manager.backup.should be_true
-          @backup_file2 = MyRuby::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
+          @backup_file2 = MyFileUtils::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
           @backup_file2.read.should == @data_text
           @backup_file2.read.should == @data_file.read
           @backup_file2.should == @backup_file
@@ -604,7 +605,7 @@ describe MyServer::ServerManager do
           @manager.backup
           bak = @manager.last_backup
           File.exists?(bak).should be_true
-          MyRuby::ZippedFileManager.new(bak,"#{@data_basename}").read.should == @data_text
+          MyFileUtils::ZippedFileManager.new(bak,"#{@data_basename}").read.should == @data_text
         end
       end
       
@@ -629,7 +630,7 @@ describe MyServer::ServerManager do
       describe "#restore" do
         before do
           @manager.backup
-          @backup_file = MyRuby::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
+          @backup_file = MyFileUtils::ZippedFileManager.new("#{@manager.last_backup}","#{@data_basename}")
         end
         
         it "should exist" do
@@ -714,11 +715,11 @@ describe MyServer::ServerManager do
     
     describe do # update
       before do
-        @service = MyRuby::FileManager.new("#{@server.path}/#{@server.service}")
+        @service = MyFileUtils::FileManager.new("#{@server.path}/#{@server.service}")
         @service_text = "service executable #{@chaos_str}"
         @service.write(@service_text)
         
-        @service_update = MyRuby::FileManager.new("#{@manager.update_dir}/#{@manager.update_name}")
+        @service_update = MyFileUtils::FileManager.new("#{@manager.update_dir}/#{@manager.update_name}")
         @update_text = "service update #{@chaos_str}"
         @service_update.write(@update_text)
       end
@@ -775,7 +776,7 @@ describe MyServer::ServerManager do
         it "should store previous executable in backup" do
           @service.read.should == @service_text
           @manager.update
-          old = MyRuby::FileManager.new(@manager.old_service)
+          old = MyFileUtils::FileManager.new(@manager.old_service)
           old.read.should == @service_text
           old.dir.match(/#{@manager.backup_dir}/).should be_true
         end
@@ -788,7 +789,7 @@ describe MyServer::ServerManager do
         
         it "should contain the old service executable" do
           @manager.update
-          old = MyRuby::FileManager.new(@manager.old_service)
+          old = MyFileUtils::FileManager.new(@manager.old_service)
           old.exists?.should be_true
           old.read.should == @service_text
         end

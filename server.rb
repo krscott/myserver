@@ -1,5 +1,6 @@
 require 'socket'
-require_relative 'myruby.rb'
+require_relative 'myfileutils.rb'
+require_relative 'myenum.rb'
 
 module MyServer
   # Defaults
@@ -122,7 +123,7 @@ module MyServer
     end
     
     def refresh_timestamp()
-      @timestamp = MyRuby.timestamp
+      @timestamp = MyFileUtils.timestamp
     end
     
     def running?()
@@ -263,8 +264,8 @@ module MyServer
     end
     
     def data_changed?()
-      d = MyRuby::DirectoryManager.new("#{@data_dir}")
-      m = MyRuby::FileManager.new(file_backup_md5)
+      d = MyFileUtils::DirectoryManager.new("#{@data_dir}")
+      m = MyFileUtils::FileManager.new(file_backup_md5)
       @md5sum = d.md5sum
       if m.exists? and m.read == @md5sum
         return false
@@ -301,7 +302,7 @@ module MyServer
     
     def write_data_md5sum()
       @md5sum ||= data_changed?
-      m = MyRuby::FileManager.new("#{file_backup_md5}")
+      m = MyFileUtils::FileManager.new("#{file_backup_md5}")
       m.write "#{@md5sum}"
     end
     
@@ -310,7 +311,7 @@ module MyServer
         puterr "#{@data_dir} does not exist"
         return false
       end
-      data = MyRuby::DirectoryManager.new(@data_dir)
+      data = MyFileUtils::DirectoryManager.new(@data_dir)
       @last_backup = data.create_backup(@backup_dir, @timestamp)
       return @last_backup
     end
@@ -323,7 +324,7 @@ module MyServer
         puterr "#{@backup_dir} does not exist"
         return false
       end
-      data = MyRuby::DirectoryManager.new(@data_dir)
+      data = MyFileUtils::DirectoryManager.new(@data_dir)
       @last_restore = data.restore_backup(@backup_dir, match_file)
       return @last_restore
     end
@@ -334,13 +335,13 @@ module MyServer
     end
     
     def service_matches?(file)
-      f = MyRuby::FileManager.new(file)
-      s = MyRuby::FileManager.new(service_path)
+      f = MyFileUtils::FileManager.new(file)
+      s = MyFileUtils::FileManager.new(service_path)
       return (f.md5sum == s.md5sum)
     end
     
     def update_service(update_file)
-      srvc = MyRuby::FileManager.new("#{@server.path}/#{@server.service}")
+      srvc = MyFileUtils::FileManager.new("#{@server.path}/#{@server.service}")
       
       if !File.directory?(@data_dir)
         puterr "#{@data_dir} does not exist"
@@ -356,8 +357,8 @@ module MyServer
         return false
       end
       
-      @old_service = "#{@backup_dir}/#{server.service}#{MyRuby::BACKUP_SEPARATOR}#{@timestamp}"
-      old_srvc = MyRuby::FileManager.new(@old_service)
+      @old_service = "#{@backup_dir}/#{server.service}#{MyFileUtils::BACKUP_SEPARATOR}#{@timestamp}"
+      old_srvc = MyFileUtils::FileManager.new(@old_service)
       old_srvc.update(srvc.path)
       srvc.update("#{update_file}")
       return true
