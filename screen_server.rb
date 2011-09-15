@@ -6,7 +6,7 @@ module MyServer
     
     def initialize(h={})
       super
-      @sockname ||= (self.class.to_s
+      @sockname ||= self.class.to_s
       @window ||= @sockname
     end
     

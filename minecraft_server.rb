@@ -2,12 +2,12 @@ require 'net/http'
 require_relative 'screen_server.rb'
 
 CUSTOM_SERVER_OPTS = {
-  path: '/home/minecraft/serverfiles'
-  service: 'minecraft_service.jar'
+  path: '/home/minecraft/serverfiles',
+  service: 'minecraft_service.jar',
 }
 CUSTOM_MANAGER_OPTS = {
   world_list: %w[world world_nether],
-  world_file: '.world'
+  world_file: '.world',
   
   c10t_dir: 'c10t',
   c10t_google_api: 'google-api/google-api.sh',
@@ -18,7 +18,7 @@ CUSTOM_MANAGER_OPTS = {
   map_history_dir: 'history',
   map_google_dir: 'googlemap',
   
-  log_dir: 'logs'
+  log_dir: 'logs',
 }
 
 module MyServer
@@ -27,7 +27,7 @@ module MyServer
     private
     
     def invocation()
-      "java -Xmx1024M -Xms1024M -jar #{@service} nogui"
+      "cd #{@path} && java -Xmx1024M -Xms1024M -jar #{@service} nogui"
     end
   end
   
