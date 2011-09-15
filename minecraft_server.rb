@@ -24,6 +24,18 @@ CUSTOM_MANAGER_OPTS = {
 module MyServer
   class MinecraftServer < ScreenServer
     
+    def start()
+      cmd "#{invocation}"
+      sleep 5
+      return running?
+    end
+    
+    def stop()
+      cmd "stop"
+      sleep 10
+      return !running?
+    end
+    
     private
     
     def invocation()
@@ -83,7 +95,7 @@ module MyServer
   
   def self.minecraft_server(*argv)
     server = MinecraftServer.new(CUSTOM_SERVER_OPTS)
-    manager = MinecraftManager.new(CUSTOM_MANAGER_OPTS)
+    manager = MinecraftManager.new(server, CUSTOM_MANAGER_OPTS)
     
     manager.public_send(argv.shift, *argv)
   end

@@ -10,11 +10,6 @@ module MyServer
       @window ||= @sockname
     end
     
-    def start()
-      system invocation
-      return running?
-    end
-    
     def service()
       raise "#Service not initialized" if @service.nil?
       return @service
@@ -32,17 +27,13 @@ module MyServer
     
     private
     
-    def invocation()
-      ""
-    end
-    
     def screen_running?()
       system "screen -ls | grep #{@sockname} > /dev/null"
     end
     
     def start_screen()
-      putout "Creating new screen session. Socket name: #{@sockname}; Window: #{@window}"
       system "screen -dmS #{@sockname} -t #{@window}"
+      putout "Creating new screen session. Socket name: #{@sockname}; Window: #{@window}"
     end
   end
 end
