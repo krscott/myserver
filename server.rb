@@ -128,6 +128,10 @@ module MyServer
       @timestamp = MyFileUtils.timestamp
     end
     
+    def service_path()
+      "#{@path}/#{@service}"
+    end
+    
     def data_path()
       "#{@path}/#{@data_dir}"
     end
@@ -182,12 +186,12 @@ module MyServer
       result = false
       if before_backup
         if data_changed?
-          putout "Creating backup of #{service} files..."
+          putout "Creating backup of #{@data_dir} files..."
           if backup_files
             write_data_md5sum()
-            putout "Created #{service} backup in #{@last_backup}."
+            putout "Created #{@data_dir} backup in #{@last_backup}."
           else
-            puterr "Failed to backup #{service} files."
+            puterr "Failed to backup #{@data_dir} files."
           end
         else
           putout "Data has not changed. Backup aborted."
@@ -207,12 +211,12 @@ module MyServer
       result = false
       was_running = running?
       if stop
-        putout "Restoring from backup of #{service} files..."
+        putout "Restoring from backup of #{@data_dir} files..."
         if restore_files(match_file)
-          putout "Restored #{service} from backup '#{@last_restore}'"
+          putout "Restored #{@data_dir} from backup '#{@last_restore}'"
           result = true
         else
-          puterr "Failed to restore #{service} files."
+          puterr "Failed to restore #{@data_dir} files."
         end
         start if was_running
       end

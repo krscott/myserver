@@ -133,7 +133,7 @@ module MyFileUtils
           zipfile.add(file.sub(path+'/',''),file)
         end
       end
-      archive
+      return archive
     end
     
     def restore_archive(archive="#{dir}.zip")
@@ -145,7 +145,7 @@ module MyFileUtils
          zip_file.extract(f, f_path) unless File.exist?(f_path)
         end
       end
-      archive
+      return archive
     end
     
     def inspect()
