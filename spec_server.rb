@@ -5,6 +5,8 @@ require_relative 'server.rb'
 require_relative 'myfileutils.rb'
 require_relative 'myenum.rb'
 
+MyServer::SERVER_OPTS[:output_mode] = :quiet;
+
 class Incrementor
   def next()
     @i ||= -1
@@ -219,9 +221,9 @@ describe MyServer::Server do
         @server.say("foo")
       end
       
-      it "should return cmd(\"say \#{str}\")" do
-        @server.say("foo").should == @server.cmd("say foo")
-      end
+      #it "should return cmd(\"say \#{str}\")" do
+      #  @server.say("foo").should == @server.cmd("say foo")
+      #end
     end
     
     describe "#host_say" do

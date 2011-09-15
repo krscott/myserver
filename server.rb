@@ -8,7 +8,7 @@ module MyServer
   MD5SUM_SUFFIX = "_md5sum"
   
   SERVER_OPTS = {
-    output_mode: :quiet,
+    output_mode: :normal,
     server_output_mode: :normal,
     service: "server_executable",
     path: "#{BASE_DIR}",
@@ -28,7 +28,6 @@ module MyServer
     attr_accessor :output_mode, :server_output_mode
     def initialize(h={})
       @output = ""
-      @output_mode = :quiet
       SERVER_OPTS.merge(h).each do |k,v|
         instance_variable_set "@#{k}", v
       end
@@ -74,7 +73,7 @@ module MyServer
     end
     
     def say(str)
-      cmd "say #{str}"
+      cmd "say #{str}" if running?
     end
     
     def host_say(str)
@@ -120,6 +119,10 @@ module MyServer
       @server = server
       
       @path = @server.path
+      
+      [@path, data_path, update_path, backup_path].each do |p|
+        FileUtils.mkdir_p(p)
+      end
       
       refresh_timestamp
     end
@@ -223,11 +226,11 @@ module MyServer
       return result
     end
     
-    def update(path=nil)
+    def update(custom_path=nil)
       result = false
       was_running = running?
       putout "Fetching #{service} update..."
-      update_file = (path or fetch_update)
+      update_file = (custom_path or fetch_update)
       if update_file.nil?
         puterr "Unable to fetch #{service} update."
       elsif !File.exists?(update_file)
@@ -282,6 +285,7 @@ module MyServer
     end
     
     def data_changed?()
+      return true if !Dir.exists?("#{data_path}")
       d = MyFileUtils::DirectoryManager.new("#{data_path}")
       m = MyFileUtils::FileManager.new(file_backup_md5)
       @md5sum = d.md5sum
@@ -355,11 +359,12 @@ module MyServer
     def service_matches?(file)
       f = MyFileUtils::FileManager.new(file)
       s = MyFileUtils::FileManager.new(service_path)
+      return false if (!f.exists? || !s.exists?)
       return (f.md5sum == s.md5sum)
     end
     
     def update_service(update_file)
-      srvc = MyFileUtils::FileManager.new("#{@server.path}/#{@server.service}")
+      srvc = MyFileUtils::FileManager.new("#{server.path}/#{server.service}")
       
       if !File.directory?(data_path)
         puterr "#{data_path} does not exist"
@@ -370,14 +375,15 @@ module MyServer
       elsif !File.directory?(update_path)
         puterr "#{update_path} does not exist"
         return false
-      elsif !srvc.exists?
-        puterr "Service #{srvc.path} does not exist"
-        return false
       end
       
-      @old_service = "#{backup_path}/#{server.service}#{MyFileUtils::BACKUP_SEPARATOR}#{@timestamp}"
-      old_srvc = MyFileUtils::FileManager.new(@old_service)
-      old_srvc.update(srvc.path)
+      if srvc.exists?
+        putout "Creating backup of old #{server.service}"
+        @old_service = "#{backup_path}/#{server.service}#{MyFileUtils::BACKUP_SEPARATOR}#{@timestamp}"
+        old_srvc = MyFileUtils::FileManager.new(@old_service)
+        old_srvc.update(srvc.path)
+      end
+      
       srvc.update("#{update_file}")
       return true
     end

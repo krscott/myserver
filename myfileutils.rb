@@ -176,6 +176,7 @@ module MyFileUtils
     alias :base :basename
     
     def realpath()
+      return @file if !exists?
       File.realpath(@file)
     end
     alias :path :realpath

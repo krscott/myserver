@@ -22,7 +22,7 @@ module MyServer
     def cmd(str)
       start_screen unless screen_running?
       # bash$ screen -S "$SOCKNAME" -p "$WINDOW" -X eval "stuff \"$1\"\015"
-      system "screen -S #{@sockname} -p #{@window} -X eval \"stuff \\\"#{str}\\\"\\\015\""
+      system "screen -S #{@sockname} -p #{@window} -X eval \"stuff \\\"#{str}\\\"\015\""
     end
     
     private

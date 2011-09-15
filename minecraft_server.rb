@@ -44,22 +44,6 @@ module MyServer
   end
   
   class MinecraftManager < ServerManager
-    private
-    
-    def before_backup(prep_flag=false)
-      return unless prep_flag
-      if running?
-        cmd "save-all"
-        cmd "save-off"
-      end
-    end
-    
-    def after_backup(prep_flag=false)
-      return unless prep_flag
-      if running?
-        cmd "save-on"
-      end
-    end
     
     def backup()
       before_backup(true)
@@ -81,15 +65,35 @@ module MyServer
       @data_dir = orig_data_dir
     end
     
+    private
+    
+    def before_backup(prep_flag=false)
+      return true unless prep_flag
+      if running?
+        cmd "save-all"
+        cmd "save-off"
+      end
+      return true
+    end
+    
+    def after_backup(prep_flag=false)
+      return true unless prep_flag
+      if running?
+        cmd "save-on"
+      end
+      return true
+    end
+    
     def fetch_update()
       updated_service_path = "#{update_path}/#{service}"
       Net::HTTP.start("s3.amazonaws.com") do |http|
         resp = http.get("/MinecraftDownload/launcher/minecraft_server.jar")
-        FileUtils.rm updated_service_path
+        #FileUtils.rm updated_service_path
         open(updated_service_path, "wb") do |f|
           f.write(resp.body)
         end
       end
+      return updated_service_path
     end
   end
   
