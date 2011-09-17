@@ -12,6 +12,21 @@ module MyFileUtils
     Time.new.to_a[0..5].reverse.insert(3,"_").map{|x| x.is_a?(String) ? x : x.to_s.rjust(2,"0")}.join("")
   end
   
+  def self.download(from, to)
+    host = from.match(/^[^\/]*/).to_s
+    dir = from.match(/\/.*/).to_s
+    FileUtils.mkdir_p File.realpath(File.dirname(to))
+    puts File.realpath(File.dirname(to))
+    Net::HTTP.start(host) do |http|
+      resp = http.get(dir)
+      #FileUtils.rm to
+      open(to, "wb") do |f|
+        f.write(resp.body)
+      end
+    end
+    return to
+  end
+  
   class DirectoryManager
     attr_reader :dir
     
@@ -282,4 +297,6 @@ module MyFileUtils
       file==other.file and archive==other.archive
     end
   end
+  
+  
 end

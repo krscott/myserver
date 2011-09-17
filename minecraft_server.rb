@@ -2,10 +2,12 @@ require 'net/http'
 require_relative 'screen_server.rb'
 
 CUSTOM_SERVER_OPTS = {
-  path: '/home/minecraft/serverfiles',
-  service: 'minecraft_service.jar',
+  path: "#{HOME}/serverfiles",
+  service: 'minecraft_server.jar',
 }
 CUSTOM_MANAGER_OPTS = {
+  update_url: "s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
+  
   world_list: %w[world world_nether],
   world_file: '.world',
   
@@ -82,18 +84,6 @@ module MyServer
         cmd "save-on"
       end
       return true
-    end
-    
-    def fetch_update()
-      updated_service_path = "#{update_path}/#{service}"
-      Net::HTTP.start("s3.amazonaws.com") do |http|
-        resp = http.get("/MinecraftDownload/launcher/minecraft_server.jar")
-        #FileUtils.rm updated_service_path
-        open(updated_service_path, "wb") do |f|
-          f.write(resp.body)
-        end
-      end
-      return updated_service_path
     end
   end
   

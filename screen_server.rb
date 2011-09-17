@@ -1,12 +1,15 @@
 require_relative 'server.rb'
 
+HOME = `echo $HOME`.strip
+USER = `whoami`.strip
+
 module MyServer
   class ScreenServer < Server
     attr_writer :service
     
     def initialize(h={})
       super
-      @sockname ||= self.class.to_s
+      @sockname ||= self.class.to_s.gsub!(/.*::/,'')
       @window ||= @sockname
     end
     

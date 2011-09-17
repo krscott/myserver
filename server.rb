@@ -352,8 +352,13 @@ module MyServer
     end
     
     def fetch_update()
-      return nil if !File.exists?("#{update_path}/#{@update_name}")
-      return "#{update_path}/#{@update_name}"
+      if @update_url.nil?
+        return nil if !File.exists?("#{update_path}/#{@update_name}")
+        return "#{update_path}/#{@update_name}"
+      else
+        updated_service_path = "#{update_path}/#{service}"
+        return MyFileUtils.download(@update_url, updated_service_path)
+      end
     end
     
     def service_matches?(file)
