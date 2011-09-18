@@ -45,7 +45,7 @@ module MyServer
     end
   end
   
-  class MinecraftManager < ServerManager
+  class MinecraftManager < TerminalServerManager
     
     def backup()
       before_backup(true)
@@ -86,15 +86,8 @@ module MyServer
       return true
     end
   end
-  
-  def self.minecraft_server(*argv)
-    server = MinecraftServer.new(CUSTOM_SERVER_OPTS)
-    manager = MinecraftManager.new(server, CUSTOM_MANAGER_OPTS)
-    
-    manager.public_send(argv.shift, *argv)
-  end
 end
 
 if $0 == __FILE__
-  MyServer.minecraft_server(*ARGV)
+  MyServer::MinecraftManager.new_server(ARGV, CUSTOM_SERVER_OPTS, CUSTOM_MANAGER_OPTS)
 end

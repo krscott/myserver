@@ -147,6 +147,25 @@ module MyServer
       "#{@path}/#{@backup_dir}"
     end
     
+    def usage()
+      puts "Usage: #{File.basename($0)} COMMAND [OPTIONS]"
+    end
+    
+    def help()
+      usage
+      puts "
+  start               start the server
+  stop                stop the server
+  restart             stop and start the server
+  update              update #{service}
+  backup              backup #{service} data
+  restore [PATTERN]   restore data from backup (default: last backup)
+  status              display server status
+  help                display this help
+  cmd COMMAND         send a command to server
+  say TEXT            broadcast a message to players"
+    end
+    
     def running?()
       server.running?
     end
@@ -253,9 +272,9 @@ module MyServer
     
     def status()
       if running?
-        putout "#{service} is running."
+        puts "#{service} is running."
       else
-        putout "#{service} is not running."
+        puts "#{service} is not running."
       end
       return running?
     end
@@ -312,6 +331,7 @@ module MyServer
       "#{backup_path}/#{File.basename(data_path)}#{MD5SUM_SUFFIX}"
     end
     
+    ##### PRIVATE METHODS #####
     private
     
     def before_backup()
@@ -391,6 +411,38 @@ module MyServer
       
       srvc.update("#{update_file}")
       return true
+    end
+  end
+  
+  class TerminalServerManager < ServerManager
+    
+    def self.new_server(argv, server_opts, manager_opts)
+      argv += [] # Create copy
+      server = MinecraftServer.new(server_opts)
+      manager = MinecraftManager.new(server, manager_opts)
+      
+      if argv.empty?
+        manager.usage
+      else
+        begin
+          manager.public_send(argv.shift, *argv)
+        rescue Exception => e
+          puts "#{e.class}: #{e.message}"
+          if e.class == NoMethodError
+            manager.help
+          end
+        end
+      end
+    end
+    
+    [:cmd, :say].each do |m|
+      define_method(m) do |*a|
+        if a.empty?
+          super()
+        else
+          super(a.join(" "))
+        end
+      end
     end
   end
 end
