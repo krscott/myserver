@@ -9,6 +9,9 @@ CUSTOM_MANAGER_OPTS = {
   properties_file: 'server.properties',
   ops_file: 'ops.txt',
   banned_players_list_file: 'banned-players.txt',
+  server_log_file: 'server.log',
+  
+  server_log_backup_dir: 'serverlogs',
   
   update_url: "s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
   
@@ -24,6 +27,21 @@ CUSTOM_MANAGER_OPTS = {
   map_current_dir: 'current',
   map_history_dir: 'history',
   map_google_dir: 'googlemap',
+  
+  map_calls: {
+    "day" => "",
+    "night" => "--night",
+    "isometric" => "--isometric",
+    "isometric.night" => "--night --isometric",
+    "height" => "--heightmap",
+  },
+  map_hidden_calls: { 
+    "cave" => "--cave-mode",
+  },
+  map_nether_calls: {
+    "" => "--hell-mode",
+    "isometric" => "--hell-mode --isometric",
+  },
   
   log_dir: 'logs',
 }
@@ -71,6 +89,12 @@ module MyServer
         puts "#{service} is not running."
       end
       return running?
+    end
+    
+    def stop()
+      if super()
+        save_server_log
+      end
     end
     
     def backup()
@@ -150,7 +174,80 @@ module MyServer
     [@@help, @@help_params].each { |h| h[:prop] = h[:property] }
     alias :prop :property
     
+    @@help[:map] = "Draws the current map. Use no options for default maps."
+    @@help_params[:map] = "[-a [ARCHIVE]] [WORLD] [NAME] [OPTIONS]"
+    def map(world=nil, name=nil, opts=nil)
+      world ||= @op_map
+      opts ||= ""
+      
+      if running?
+        cmd "save-off"
+        cmd "save-all"
+      end
+      
+      if !name.nil?
+        draw_map(world, name, opts)
+      else
+        putout "Drawing maps..."
+        
+        w = world()
+        @map_calls.each do |k,v|
+          draw_map w, k, v
+        end
+        @map_hidden_calls.each do |k,v|
+          draw_map w, k, v, "."
+        end
+        @map_nether_calls.each do |k,v|
+          draw_map "#{w}_nether", k, v
+        end
+      end
+      
+      putout "Finished drawing maps!"
+      
+      if running?
+        cmd "save-on"
+      end
+    end
+    
     private
+    
+    def save_server_log()
+      log = "#{@path}/#{@server_log_file}"
+      if !File.exists?(log)
+        puterr "Server log file '#{@server_log_file}' not found"
+      else
+        FileUtils.mkdir_p("#{@path}/#{@server_log_backup_dir}")
+        filename = "#{world}.#{@server_log_file}.#{@timestamp}.log"
+        dest = "#{@path}/#{@server_log_backup_dir}/#{filename}"
+        putout "Saving log file '#{@server_log_file}' to #{@server_log_backup_dir}/#{filename}", :terminal
+        putout "Saving logs...", :server
+        FileUtils.cp(log, dest)
+      end
+    end
+    
+    def draw_map(world, name, opts="", prefix="")
+      filename = "#{prefix}#{world}.#{name}.png"
+      historyname = "#{prefix}#{world}.#{name}.#{timestamp}.png"
+      
+      putout "Drawing map #{filename}", :terminal
+      img = MyFileUtils::FileManager.new( c10t(name, opts) )
+      dest = MyFileUtils::FileManager.new("#{@path}/#{@map_dir}/#{@map_current_dir}/#{filename}")
+      if !img.exist?
+        puterr "Map #{filename} does not exist", :terminal
+      elsif dest.exists? and dest.md5sum == img.md5sum
+        putout "Map #{filename} hasn't changed", :terminal
+      else
+        FileUtils.mkdir_p dest.path
+        FileUtils.cp(img.path, dest.path)
+        if @op_archive
+          if @op_archive==true
+            @op_archive = "#{@path}/#{@map_dir}/#{@map_current_dir}"
+          end
+          FileUtils.mkdir_p @op_archive
+          FileUtils.cp(img.path, "#{@op_archive}/#{historyname}")
+        end
+      end
+    end
     
     def c10t(name, opts)
       system "#{@path}/#{@c10t_dir}/#{@c10t} #{opts} -M #{@c10t_mb} -w #{@path}/#{name} -o #{@path}/#{@c10t_dir}/output.png"

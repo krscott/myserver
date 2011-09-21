@@ -80,13 +80,13 @@ module MyServer
       end
     end
     
-    def puterr(str)
+    def puterr(str, mode=:all)
       str = "WARNING: #{str}"
       if output_mode == :error
         puts str
         append_output "#{str}\n"
       else
-        putout(str)
+        putout(str, mode)
       end
     end
     
@@ -138,7 +138,7 @@ module MyServer
     end
     
     server_attr_accessor :output_mode, :server_output_mode, :optparser
-    server_attr_reader :service, :path
+    server_attr_reader :service, :path, :timestamp
     attr_accessor *SERVER_MANAGER_OPTS.keys
     attr_reader :server, :timestamp, :last_backup, :old_service
     
@@ -306,12 +306,12 @@ module MyServer
       "#{server.dumpout}"
     end
     
-    def putout(str, mode=:all)
-      server.putout str, mode
+    def putout(*a)
+      server.putout *a
     end
     
-    def puterr(str)
-      server.puterr str
+    def puterr(*a)
+      server.puterr *a
     end
     
     def output()
