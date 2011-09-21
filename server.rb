@@ -1,4 +1,5 @@
 require 'socket'
+require 'optparse'
 require_relative 'myfileutils.rb'
 require_relative 'myenum.rb'
 
@@ -8,6 +9,7 @@ module MyServer
   MD5SUM_SUFFIX = "_md5sum"
   
   SERVER_OPTS = {
+    output_save_length: 1000,
     output_mode: :normal,
     server_output_mode: :normal,
     service: "server_executable",
@@ -21,6 +23,21 @@ module MyServer
     update_name: "server_update",
     update_url: nil,
   }
+  
+  USAGE = 'Usage: #{File.basename($0)} COMMAND [OPTIONS]'
+  
+  HELP_TEXT = 'Commands
+    start                            start the server
+    stop                             stop the server
+    restart                          stop and start the server
+    update                           update #{service}
+    backup                           backup #{service} data
+    restore [PATTERN]                restore data from backup 
+                                       (default: last backup)
+    status                           display server status
+    help                             display this help
+    cmd COMMAND                      send a command to server
+    say TEXT                         broadcast a message to players'
   
   ## Contains methods for communicating with the server software.
   class Server
@@ -52,17 +69,22 @@ module MyServer
       return out
     end
     
-    def putout(str)
-      puts "#{str}" unless output_mode == :quiet
-      host_say "#{str}" unless server_output_mode == :quiet
-      output << "#{str}\n"
+    def putout(str, mode=:all)
+      if mode == :all or mode == :terminal
+        puts "#{str}" unless output_mode == :quiet
+        append_output "#{str}\n"
+      end
+      
+      if mode == :all or mode == :server
+        host_say "#{str}" unless server_output_mode == :quiet
+      end
     end
     
     def puterr(str)
       str = "WARNING: #{str}"
       if output_mode == :error
         puts str
-        output << "#{str}\n"
+        append_output "#{str}\n"
       else
         putout(str)
       end
@@ -78,6 +100,15 @@ module MyServer
     
     def host_say(str)
       say "#{@hostname}: #{str}"
+    end
+    
+    private
+    
+    def append_output(str)
+      output << "#{str}\n"
+      while output.length > @output_save_length
+        output.sub!(/$[^\n]\n/,'')
+      end
     end
   end
   
@@ -106,7 +137,7 @@ module MyServer
       end
     end
     
-    server_attr_accessor :output_mode, :server_output_mode
+    server_attr_accessor :output_mode, :server_output_mode, :optparser
     server_attr_reader :service, :path
     attr_accessor *SERVER_MANAGER_OPTS.keys
     attr_reader :server, :timestamp, :last_backup, :old_service
@@ -148,22 +179,12 @@ module MyServer
     end
     
     def usage()
-      puts "Usage: #{File.basename($0)} COMMAND [OPTIONS]"
+      eval "puts \"#{USAGE}\""
     end
     
     def help()
       usage
-      puts "
-  start               start the server
-  stop                stop the server
-  restart             stop and start the server
-  update              update #{service}
-  backup              backup #{service} data
-  restore [PATTERN]   restore data from backup (default: last backup)
-  status              display server status
-  help                display this help
-  cmd COMMAND         send a command to server
-  say TEXT            broadcast a message to players"
+      eval "puts \"#{HELP_TEXT}\""
     end
     
     def running?()
@@ -211,7 +232,8 @@ module MyServer
           putout "Creating backup of #{@data_dir} files..."
           if backup_files
             write_data_md5sum()
-            putout "Created #{@data_dir} backup in #{@last_backup}."
+            putout "Created #{@data_dir} backup in #{@last_backup}.", :terminal
+            putout "Created #{@data_dir} backup in #{File.basename(@last_backup)}.", :server
           else
             puterr "Failed to backup #{@data_dir} files."
           end
@@ -235,7 +257,8 @@ module MyServer
       if stop
         putout "Restoring from backup of #{@data_dir} files..."
         if restore_files(match_file)
-          putout "Restored #{@data_dir} from backup '#{@last_restore}'"
+          putout "Restored #{@data_dir} from backup '#{@last_restore}'", :terminal
+          putout "Restored #{@data_dir} from backup '#{File.basename(@last_restore)}'", :server
           result = true
         else
           puterr "Failed to restore #{@data_dir} files."
@@ -283,8 +306,8 @@ module MyServer
       "#{server.dumpout}"
     end
     
-    def putout(str)
-      server.putout str
+    def putout(str, mode=:all)
+      server.putout str, mode
     end
     
     def puterr(str)
@@ -416,23 +439,49 @@ module MyServer
   
   class TerminalServerManager < ServerManager
     
-    def self.new_server(argv, server_opts, manager_opts)
-      argv += [] # Create copy
+    def self.terminal(argv, server_opts, manager_opts)
+      
+      optparse_options = set_opts()
+      parse_opts(argv)
+      manager_opts.merge!(optparse_options)
+      
       server = MinecraftServer.new(server_opts)
       manager = MinecraftManager.new(server, manager_opts)
       
       if argv.empty?
         manager.usage
       else
+        method = argv.shift
         begin
-          manager.public_send(argv.shift, *argv)
+          manager.public_send(method, *argv)
         rescue Exception => e
           puts "#{e.class}: #{e.message}"
-          if e.class == NoMethodError
+          if e.class == NoMethodError and !manager.methods.include?(method.to_sym)
             manager.help
+          else
+            puts e.backtrace.map{|x| "  #{x}"}
           end
         end
       end
+      
+      return manager
+    end 
+    
+    def self.set_opts()
+      options = {}
+      
+      @@opts ||= OptionParser.new
+      @@opts.banner = "\nMore Options"
+      @@opts.on("-f", "--force", "try harder!") { options[:op_force] = true }
+      @@opts.on("-h", "--help [METHOD]", "display in-depth help [about METHOD]") do |x|
+        options[:op_help] = (x or true)
+      end
+      
+      return options
+    end
+    
+    def self.parse_opts(args=ARGV)
+      @@opts.parse! args
     end
     
     [:cmd, :say].each do |m|
@@ -444,5 +493,36 @@ module MyServer
         end
       end
     end
+    
+    @@help_params = {}
+    
+    @@help = {
+      help: "I think you can figure this one out.",
+      start: "Starts the server",
+      stop: "Stops the server",
+      restart: "Restarts the server",
+    }
+    
+    def initialize(*a)
+      super(*a)
+      if @op_help
+        begin
+          if @op_help==true and !ARGV[0].nil? and !ARGV[0].empty? and methods.include?(ARGV[0].to_sym)
+            @op_help = ARGV[0]
+          end
+          if @op_help.is_a? String and @@help.keys.include?(@op_help.to_sym)
+            puts "Usage: #{File.basename($0)} #{@op_help} #{@@help_params[@op_help.to_sym]}"
+            puts "  #{@@help[@op_help.to_sym]}"
+          else
+            help
+            puts @@opts
+          end
+        ensure
+          # Don't want any runaway commands
+          exit
+        end
+      end
+    end
+    
   end
 end
