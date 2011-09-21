@@ -181,11 +181,13 @@ module MyFileUtils
     alias :exist? :exists?
     
     def dirname()
+      return File.dirname(@file) if !exists?
       File.dirname(File.realpath(@file))
     end
     alias :dir :dirname
     
     def basename()
+      return File.basename(@file) if !exists?
       File.basename(File.realpath(@file))
     end
     alias :base :basename

@@ -244,7 +244,7 @@ module MyServer
       elsif dest.exists? and dest.md5sum == img.md5sum
         putout "Map #{filename} hasn't changed", :terminal
       else
-        FileUtils.mkdir_p dest.path
+        FileUtils.mkdir_p dest.dirname
         FileUtils.cp(img.path, dest.path)
         if @op_archive
           if @op_archive==true
