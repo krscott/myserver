@@ -78,6 +78,9 @@ module MyServer
       #@@opts.on("-m", "--map NAME", "Specify a map name.") do |m|
       #  options[:op_name] = m
       #end
+      @@opts.on("--googlemap", "create only google map") do |x|
+        options[:op_googlemap] = true
+      end
       
       return options
     end
@@ -190,15 +193,17 @@ module MyServer
       else
         putout "Drawing maps..."
         
-        w = (level or world())
-        @map_calls.each do |k,v|
-          draw_map w, k, v
-        end
-        @map_hidden_calls.each do |k,v|
-          draw_map w, k, v, "."
-        end
-        @map_nether_calls.each do |k,v|
-          draw_map "#{w}_nether", k, v
+        unless @op_googlemap
+          w = (level or world())
+          @map_calls.each do |k,v|
+            draw_map w, k, v
+          end
+          @map_hidden_calls.each do |k,v|
+            draw_map w, k, v, "."
+          end
+          @map_nether_calls.each do |k,v|
+            draw_map "#{w}_nether", k, v
+          end
         end
         draw_google_map w
       end
@@ -255,12 +260,12 @@ module MyServer
       level ||= world()
       google_api = "#{@path}/#{@c10t_dir}/#{@c10t_google_api}"
       google_map_dir = "#{@path}/#{@map_dir}/#{@map_google_dir}/google-api-#{level}"
-      FileUtils.mkdir_p("#{google_api_dir}/tiles")
+      FileUtils.mkdir_p("#{google_map_dir}/tiles")
       system("#{google_api} -w '#{@path}/#{level}' -o '#{google_map_dir}' -O '-M #{@c10t_mb}' #{opts}")
     end
     
     def c10t(name, opts)
-      system "#{@path}/#{@c10t_dir}/#{@c10t} #{opts} -M #{@c10t_mb} -w #{@path}/#{name} -o #{@path}/#{@c10t_dir}/output.png"
+      system "#{@path}/#{@c10t_dir}/#{@c10t} #{opts} -M #{@c10t_mb} -w '#{@path}/#{name}' -o '#{@path}/#{@c10t_dir}/output.png'"
       return "#{@path}/#{@c10t_dir}/output.png"
     end
     
