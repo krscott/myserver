@@ -248,7 +248,7 @@ module MyServer
         FileUtils.cp(img.path, dest.path)
         if @op_archive
           if @op_archive==true
-            @op_archive = "#{@path}/#{@map_dir}/#{@map_current_dir}"
+            @op_archive = "#{@path}/#{@map_dir}/#{@map_history_dir}"
           end
           FileUtils.mkdir_p @op_archive
           FileUtils.cp(img.path, "#{@op_archive}/#{historyname}")
