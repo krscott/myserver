@@ -178,7 +178,7 @@ module MyServer
     alias :prop :property
     
     @@help[:map] = "Draws the current map. Use no options for default maps."
-    @@help_params[:map] = "[-a [ARCHIVE]] [WORLD] [NAME] [OPTIONS]"
+    @@help_params[:map] = "[-a [ARCHIVE]] [--googlemap] [WORLD] [NAME] [OPTIONS]"
     def map(level=nil, name=nil, opts=nil)
       level ||= @op_map
       opts ||= ""
@@ -261,7 +261,7 @@ module MyServer
       google_api = "#{@path}/#{@c10t_dir}/#{@c10t_google_api}"
       google_map_dir = "#{@path}/#{@map_dir}/#{@map_google_dir}/google-api-#{level}"
       FileUtils.mkdir_p("#{google_map_dir}/tiles")
-      system("#{google_api} -w '#{@path}/#{level}' -o '#{google_map_dir}' -O '-M #{@c10t_mb}' #{opts}")
+      system("bash -c \"cd #{@path}/#{@c10t_dir} && #{google_api} -w '#{@path}/#{level}' -o '#{google_map_dir}' -O '-M #{@c10t_mb}' #{opts}\"")
     end
     
     def c10t(name, opts)
