@@ -223,6 +223,7 @@ module MyServer
         putout "Saving log file '#{@server_log_file}' to #{@server_log_backup_dir}/#{filename}", :terminal
         putout "Saving logs...", :server
         FileUtils.cp(log, dest)
+        #MyFileUtils::FileManager.new(log).write("")
       end
     end
     
@@ -231,7 +232,7 @@ module MyServer
       historyname = "#{prefix}#{level}.#{name}.#{timestamp}.png"
       
       putout "Drawing map #{filename}", :terminal
-      img = MyFileUtils::FileManager.new( c10t(name, opts) )
+      img = MyFileUtils::FileManager.new( c10t(level, opts) )
       dest = MyFileUtils::FileManager.new("#{@path}/#{@map_dir}/#{@map_current_dir}/#{filename}")
       if !img.exist?
         puterr "Map #{filename} does not exist", :terminal
@@ -250,7 +251,7 @@ module MyServer
       end
     end
     
-    def draw_googlemap(level=nil, opts="")
+    def draw_google_map(level=nil, opts="")
       level ||= world()
       google_api = "#{@path}/#{@c10t_dir}/#{@c10t_google_api}"
       google_map_dir = "#{@path}/#{@map_dir}/#{@map_google_dir}/google-api-#{level}"
