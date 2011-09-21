@@ -18,7 +18,7 @@ CUSTOM_MANAGER_OPTS = {
   world_list: %w[world world_nether],
   world_file: '.world',
   
-  c10t_dir: 'c10t',
+  c10t_dir: 'c10t/c10t-1.7',
   c10t: 'c10t',
   c10t_google_api: 'google-api/google-api.sh',
   c10t_mb: 256,
@@ -176,8 +176,8 @@ module MyServer
     
     @@help[:map] = "Draws the current map. Use no options for default maps."
     @@help_params[:map] = "[-a [ARCHIVE]] [WORLD] [NAME] [OPTIONS]"
-    def map(world=nil, name=nil, opts=nil)
-      world ||= @op_map
+    def map(level=nil, name=nil, opts=nil)
+      level ||= @op_map
       opts ||= ""
       
       if running?
@@ -186,11 +186,11 @@ module MyServer
       end
       
       if !name.nil?
-        draw_map(world, name, opts)
+        draw_map(level, name, opts)
       else
         putout "Drawing maps..."
         
-        w = world()
+        w = (level or world())
         @map_calls.each do |k,v|
           draw_map w, k, v
         end
@@ -200,6 +200,7 @@ module MyServer
         @map_nether_calls.each do |k,v|
           draw_map "#{w}_nether", k, v
         end
+        draw_google_map w
       end
       
       putout "Finished drawing maps!"
@@ -217,7 +218,7 @@ module MyServer
         puterr "Server log file '#{@server_log_file}' not found"
       else
         FileUtils.mkdir_p("#{@path}/#{@server_log_backup_dir}")
-        filename = "#{world}.#{@server_log_file}.#{@timestamp}.log"
+        filename = "#{world()}.#{@server_log_file}.#{@timestamp}.log"
         dest = "#{@path}/#{@server_log_backup_dir}/#{filename}"
         putout "Saving log file '#{@server_log_file}' to #{@server_log_backup_dir}/#{filename}", :terminal
         putout "Saving logs...", :server
@@ -225,9 +226,9 @@ module MyServer
       end
     end
     
-    def draw_map(world, name, opts="", prefix="")
-      filename = "#{prefix}#{world}.#{name}.png"
-      historyname = "#{prefix}#{world}.#{name}.#{timestamp}.png"
+    def draw_map(level, name, opts="", prefix="")
+      filename = "#{prefix}#{level}.#{name}.png"
+      historyname = "#{prefix}#{level}.#{name}.#{timestamp}.png"
       
       putout "Drawing map #{filename}", :terminal
       img = MyFileUtils::FileManager.new( c10t(name, opts) )
@@ -249,12 +250,20 @@ module MyServer
       end
     end
     
+    def draw_googlemap(level=nil, opts="")
+      level ||= world()
+      google_api = "#{@path}/#{@c10t_dir}/#{@c10t_google_api}"
+      google_map_dir = "#{@path}/#{@map_dir}/#{@map_google_dir}/google-api-#{level}"
+      FileUtils.mkdir_p("#{google_api_dir}/tiles")
+      system("#{google_api} -w '#{@path}/#{level}' -o '#{google_map_dir}' -O '-M #{@c10t_mb}' #{opts}")
+    end
+    
     def c10t(name, opts)
       system "#{@path}/#{@c10t_dir}/#{@c10t} #{opts} -M #{@c10t_mb} -w #{@path}/#{name} -o #{@path}/#{@c10t_dir}/output.png"
       return "#{@path}/#{@c10t_dir}/output.png"
     end
     
-    def world
+    def world()
       pf = PropertiesFile.new("#{@path}/#{@properties_file}")
       return pf.get("level-name")
     end
