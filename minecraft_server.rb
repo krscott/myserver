@@ -18,6 +18,8 @@ CUSTOM_MANAGER_OPTS = {
   world_list: %w[world world_nether],
   world_file: '.world',
   
+  status_file: '/var/www/mcstatus.txt',
+  
   c10t_dir: 'c10t/c10t-1.7',
   c10t: 'c10t',
   c10t_google_api: 'google-api/google-api.sh',
@@ -86,11 +88,12 @@ module MyServer
     end
     
     def status()
-      if running?
-        puts "#{service} is running on world '#{world}'."
-      else
-        puts "#{service} is not running."
-      end
+      out = get_status()
+      putout out, :terminal
+      
+      f = MyFileUtils::FileManager.new(@status_file)
+      f.write(out) if f.exists?
+      
       return running?
     end
     
@@ -217,6 +220,14 @@ module MyServer
     
     private
     
+    def get_status()
+      if running?
+        return "#{service} is running on world '#{world}'."
+      else
+        return "#{service} is not running."
+      end
+    end
+    
     def save_server_log()
       log = "#{@path}/#{@server_log_file}"
       if !File.exists?(log)
@@ -233,8 +244,12 @@ module MyServer
     end
     
     def draw_map(level, name, opts="", prefix="")
-      filename = "#{prefix}#{level}.#{name}.png"
-      historyname = "#{prefix}#{level}.#{name}.#{timestamp}.png"
+      if !Dir.exists?("#{@path}/#{level}")
+        puterr "World data '#{level}' does not exist", :terminal
+      end
+      
+      filename = "#{prefix}#{level}.#{name}.png".gsub!(/\.+/,'.')
+      historyname = "#{prefix}#{level}.#{name}.#{timestamp}.png".gsub!(/\.+/,'.')
       
       putout "Drawing map #{filename}", :terminal
       img = MyFileUtils::FileManager.new( c10t(level, opts) )
@@ -261,6 +276,8 @@ module MyServer
       google_api = "#{@path}/#{@c10t_dir}/#{@c10t_google_api}"
       google_map_dir = "#{@path}/#{@map_dir}/#{@map_google_dir}/google-api-#{level}"
       FileUtils.mkdir_p("#{google_map_dir}/tiles")
+      
+      putout "Drawing google map of '#{level}'"
       system("bash -c \"cd #{@path}/#{@c10t_dir} && #{google_api} -w '#{@path}/#{level}' -o '#{google_map_dir}' -O '-M #{@c10t_mb}' #{opts}\"")
     end
     
@@ -359,4 +376,5 @@ end
 
 if $0 == __FILE__
   MyServer::MinecraftManager.terminal(ARGV, CUSTOM_SERVER_OPTS, CUSTOM_MANAGER_OPTS)
+  
 end

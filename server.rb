@@ -295,9 +295,9 @@ module MyServer
     
     def status()
       if running?
-        puts "#{service} is running."
+        putout "#{service} is running.", :terminal
       else
-        puts "#{service} is not running."
+        putout "#{service} is not running.", :terminal
       end
       return running?
     end
