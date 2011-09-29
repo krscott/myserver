@@ -272,10 +272,14 @@ module MyServer
     end
     
     def get_itemlist()
-      text = MyFileUtils::FileManager.new(@itemlist_file).read
       @itemlist = {}
-      text.split("\n").each do |line|
-        @itemlist.store *(line.split("="))
+      if !File.exists?(@itemlist_file)
+        puterr "#{@itemlist_file} not found. Please run '#{File.basename($0)} update -i'", :terminal
+      else      
+        text = MyFileUtils::FileManager.new(@itemlist_file).read
+        text.split("\n").each do |line|
+          @itemlist.store *(line.split("="))
+        end
       end
       return @itemlist
     end
