@@ -1,6 +1,8 @@
 require 'net/http'
 require_relative 'screen_server.rb'
 
+UPDATE_ITEMLIST_RB = "itemlist.rb"
+
 CUSTOM_SERVER_OPTS = {
   path: "#{HOME}/serverfiles",
   service: 'minecraft_server.jar',
@@ -10,6 +12,7 @@ CUSTOM_MANAGER_OPTS = {
   ops_file: 'ops.txt',
   banned_players_list_file: 'banned-players.txt',
   server_log_file: 'server.log',
+  itemlist_file: 'itemlist.txt',
   
   server_log_backup_dir: 'serverlogs',
   
@@ -83,6 +86,12 @@ module MyServer
       @@opts.on("--googlemap", "create only google map") do |x|
         options[:op_googlemap] = true
       end
+      @@opts.on("-i","--item [ID]", "Select item id") do |x|
+        options[:op_item] = (x or true)
+      end
+      @@opts.on("-s","--service [JAR]", "Select service") do |x|
+        options[:op_service] = (x or true)
+      end
       
       return options
     end
@@ -90,16 +99,23 @@ module MyServer
     def status()
       out = get_status()
       putout out, :terminal
-      
-      f = MyFileUtils::FileManager.new(@status_file)
-      f.write(out) if f.exists?
-      
       return running?
     end
     
     def stop()
       if super()
         save_server_log
+      end
+    end
+    
+    def update()
+      if @op_item
+        update_itemlist
+      elsif @op_service
+        super()
+      else #Default
+        update_itemlist
+        super()
       end
     end
     
@@ -218,7 +234,64 @@ module MyServer
       end
     end
     
+    def save_status()
+      out = get_status()
+      f = MyFileUtils::FileManager.new(@status_file)
+      f.write(out) if f.exists?
+    end
+    
+    def item(*a)
+      str = a.join(" ")
+      out = ""
+      get_itemlist if @itemlist.nil?
+      if str.match(/\d+/)
+        name = @itemlist[str]
+        if name.nil?
+          out << "No item '#{str}' found"
+        else
+          out << "#{str} #{name}"
+        end
+      else
+        @itemlist.each do |k,v|
+          if v.match(/#{str}/i)
+            out << "#{k} #{v}\n"
+          end
+        end
+        out << "No item '#{str}' found" if out.empty?
+      end
+      putout out, :terminal
+    end
+    
+    ### PRIVATE ###
     private
+    
+    def update_itemlist()
+      putout "Updating item id list"
+      require_relative "#{UPDATE_ITEMLIST_RB}"
+      MinecraftItemlist.update(@itemlist_file)
+    end
+    
+    def get_itemlist()
+      text = MyFileUtils::FileManager.new(@itemlist_file).read
+      @itemlist = {}
+      text.split("\n").each do |line|
+        @itemlist.store *(line.split("="))
+      end
+      return @itemlist
+    end
+    
+    def find_item(item)
+      get_itemlist if @itemlist.nil?
+      
+      id = @itemlist.key("#{item}")
+      return id if !id.nil?
+      
+      @itemlist.each do |k,v|
+        return k if v.match(/#{item}/i)
+      end
+      
+      return nil
+    end
     
     def get_status()
       if running?
@@ -375,6 +448,6 @@ module MyServer
 end
 
 if $0 == __FILE__
-  MyServer::MinecraftManager.terminal(ARGV, CUSTOM_SERVER_OPTS, CUSTOM_MANAGER_OPTS)
-  
+  m = MyServer::MinecraftManager.terminal(ARGV, CUSTOM_SERVER_OPTS, CUSTOM_MANAGER_OPTS)
+  m.save_status
 end

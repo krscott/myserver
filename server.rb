@@ -72,7 +72,7 @@ module MyServer
     def putout(str, mode=:all)
       if mode == :all or mode == :terminal
         puts "#{str}" unless output_mode == :quiet
-        append_output "#{str}\n"
+        #append_output "#{str}\n"
       end
       
       if mode == :all or mode == :server
