@@ -6,7 +6,7 @@ require_relative 'myenum.rb'
 
 class String
   def tcolor(c, check=true)
-    check ? self.color(c) : self
+    check && !!c ? self.color(c) : self
   end
 end
 
@@ -79,7 +79,7 @@ module MyServer
     
     def putout(str, mode=:all, color=nil)
       if mode == :all or mode == :terminal
-        puts "#{str.tcolor(color, @term_colors)}" unless output_mode == :quiet
+        puts str.tcolor(color, @term_colors) unless output_mode == :quiet
         #append_output "#{str}\n"
       end
       

@@ -258,7 +258,7 @@ module MyServer
       else
         @itemlist.each do |k,v|
           if v.match(/^#{str}$/i)
-            out << "#{k} #{v}\n".tcolor(:green, term_colors)
+            out << "#{k} #{v}".tcolor(:green, term_colors) << "\n"
           elsif v.match(/#{str}/i)
             out << "#{k} #{v}\n"
           end
