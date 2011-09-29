@@ -1,7 +1,14 @@
 require 'socket'
 require 'optparse'
+require 'rainbow'
 require_relative 'myfileutils.rb'
 require_relative 'myenum.rb'
+
+class String
+  def tcolor(c, check=true)
+    check ? self.color(c) : self
+  end
+end
 
 module MyServer
   # Defaults
@@ -9,6 +16,7 @@ module MyServer
   MD5SUM_SUFFIX = "_md5sum"
   
   SERVER_OPTS = {
+    term_colors: true,
     output_save_length: 1000,
     output_mode: :normal,
     server_output_mode: :normal,
@@ -69,9 +77,9 @@ module MyServer
       return out
     end
     
-    def putout(str, mode=:all)
+    def putout(str, mode=:all, color=nil)
       if mode == :all or mode == :terminal
-        puts "#{str}" unless output_mode == :quiet
+        puts "#{str.tcolor(color, @term_colors)}" unless output_mode == :quiet
         #append_output "#{str}\n"
       end
       
@@ -80,13 +88,14 @@ module MyServer
       end
     end
     
-    def puterr(str, mode=:all)
+    def puterr(str, mode=:all, color=nil)
+      color ||= :yellow
       str = "WARNING: #{str}"
       if output_mode == :error
-        puts str
-        append_output "#{str}\n"
+        puts "#{str.tcolor(color, @term_colors)}"
+        #append_output "#{str}\n"
       else
-        putout(str, mode)
+        putout(str, mode, color)
       end
     end
     
@@ -176,6 +185,10 @@ module MyServer
     
     def backup_path()
       "#{@path}/#{@backup_dir}"
+    end
+    
+    def term_colors()
+      server.term_colors
     end
     
     def usage()
@@ -455,7 +468,7 @@ module MyServer
         begin
           manager.public_send(method, *argv)
         rescue Exception => e
-          puts "#{e.class}: #{e.message}"
+          puts "#{e.class}: #{e.message}".tcolor(:red, manager.term_colors)
           if e.class == NoMethodError and !manager.methods.include?(method.to_sym)
             manager.help
           else

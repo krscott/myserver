@@ -1,5 +1,4 @@
 require 'net/http'
-require 'rainbow'
 require_relative 'screen_server.rb'
 
 UPDATE_ITEMLIST_RB = "itemlist.rb"
@@ -259,7 +258,7 @@ module MyServer
       else
         @itemlist.each do |k,v|
           if v.match(/^#{str}$/i)
-            out << "#{k} #{v}\n".color(:green)
+            out << "#{k} #{v}\n".tcolor(:green, term_colors)
           elsif v.match(/#{str}/i)
             out << "#{k} #{v}\n"
           end
