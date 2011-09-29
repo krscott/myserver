@@ -1,4 +1,5 @@
 require 'net/http'
+require 'rainbow'
 require_relative 'screen_server.rb'
 
 UPDATE_ITEMLIST_RB = "itemlist.rb"
@@ -243,6 +244,10 @@ module MyServer
     def item(*a)
       str = a.join(" ")
       out = ""
+      
+      #putout find_item(str), :terminal
+      #return
+      
       get_itemlist if @itemlist.nil?
       if str.match(/\d+/)
         name = @itemlist[str]
@@ -253,7 +258,9 @@ module MyServer
         end
       else
         @itemlist.each do |k,v|
-          if v.match(/#{str}/i)
+          if v.match(/^#{str}$/i)
+            out << "#{k} #{v}\n".color(:green)
+          elsif v.match(/#{str}/i)
             out << "#{k} #{v}\n"
           end
         end
@@ -266,7 +273,7 @@ module MyServer
     private
     
     def update_itemlist()
-      putout "Updating item id list"
+      putout "Updating item id list", :terminal
       require_relative "#{UPDATE_ITEMLIST_RB}"
       MinecraftItemlist.update(@itemlist_file)
     end
@@ -289,6 +296,10 @@ module MyServer
       
       id = @itemlist.key("#{item}")
       return id if !id.nil?
+      
+      @itemlist.each do |k,v|
+        return k if v.match(/^#{item}$/i)
+      end
       
       @itemlist.each do |k,v|
         return k if v.match(/#{item}/i)

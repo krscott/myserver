@@ -1,3 +1,3 @@
 #!/bin/bash
 
-gem install rspec rubyzip
+gem install rspec rubyzip mechanize rainbow
