@@ -21,7 +21,7 @@ CUSTOM_MANAGER_OPTS = {
   
   update_url: "s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
   
-  world_list: %w[world world_nether],
+  world_list: [],
   world_file: '.world',
   
   status_file: '/var/www/mcstatus.txt',
@@ -136,6 +136,8 @@ module MyServer
         cmd "save-off"
       end
       orig_data_dir = @data_dir
+      
+      @world_list.concat( [world(), "#{world()}_nether"] ).uniq!
       @world_list.each do |w|
         @data_dir = "#{w}"
         super()
