@@ -460,7 +460,9 @@ module MyServer
     end
     
     def c10t(name, opts)
-      system "#{@path}/#{@c10t_dir}/#{@c10t} #{opts} -M #{@c10t_mb} -w '#{@path}/#{name}' -o '#{@path}/#{@c10t_dir}/output.png'"
+      c = "#{@path}/#{@c10t_dir}/#{@c10t} #{opts} -M #{@c10t_mb} -w '#{@path}/#{name}' -o '#{@path}/#{@c10t_dir}/output.png'"
+      c << " > /dev/null" unless @op_verbose
+      system c
       return "#{@path}/#{@c10t_dir}/output.png"
     end
     

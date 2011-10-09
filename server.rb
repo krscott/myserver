@@ -486,6 +486,7 @@ module MyServer
       @@opts ||= OptionParser.new
       @@opts.banner = "\nMore Options"
       @@opts.on("-f", "--force", "try harder!") { options[:op_force] = true }
+      @@opts.on("-v", "--verbose", "Print more output.") { options[:op_verbose] = true }
       @@opts.on("-h", "--help [METHOD]", "display in-depth help [about METHOD]") do |x|
         options[:op_help] = (x or true)
       end
