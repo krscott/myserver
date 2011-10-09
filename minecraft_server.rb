@@ -4,7 +4,8 @@ require_relative 'screen_server.rb'
 UPDATE_ITEMLIST_RB = "itemlist.rb"
 
 CUSTOM_SERVER_OPTS = {
-  path: "#{HOME}/serverfiles",
+  #path: "#{HOME}/serverfiles",
+  path: "/home/minecraft/serverfiles",  # FOR TESTING PURPOSES ONLY
   service: 'minecraft_server.jar',
 }
 CUSTOM_MANAGER_OPTS = {
@@ -13,6 +14,8 @@ CUSTOM_MANAGER_OPTS = {
   banned_players_list_file: 'banned-players.txt',
   server_log_file: 'server.log',
   itemlist_file: 'itemlist.txt',
+  
+  players_dir: 'players',
   
   server_log_backup_dir: 'serverlogs',
   
@@ -80,8 +83,8 @@ module MyServer
       @@opts.on("-a", "--archive [PATH]", "create archive of operation output") do |p|
         options[:op_archive] = (p or true)
       end
-      #@@opts.on("-m", "--map NAME", "Specify a map name.") do |m|
-      #  options[:op_name] = m
+      #@@opts.on("-w", "--world NAME", "Specify a world name.") do |m|
+      #  options[:op_world] = m
       #end
       @@opts.on("--googlemap", "create only google map") do |x|
         options[:op_googlemap] = true
@@ -102,32 +105,45 @@ module MyServer
       return running?
     end
     
-    def stop()
-      if super()
+    def start()
+      if !running?
         save_server_log
+        clear_server_log
       end
+      super()
     end
     
     def update()
+      flag = false
       if @op_item
         update_itemlist
-      elsif @op_service
-        super()
-      else #Default
-        update_itemlist
-        super()
+        flag = true
       end
+      if @op_service
+        super()
+        flag = true
+      end
+      return if flag
+      
+      # Default
+      update_itemlist
+      super()
     end
     
     def backup()
-      before_backup(true)
+      if running?
+        cmd "save-all"
+        cmd "save-off"
+      end
       orig_data_dir = @data_dir
       @world_list.each do |w|
         @data_dir = "#{w}"
         super()
       end
       @data_dir = orig_data_dir
-      after_backup(true)
+      if running?
+        cmd "save-on"
+      end
     end
     
     def restore(match_file = /#{File.basename(data_path)}/)
@@ -268,7 +284,25 @@ module MyServer
       putout out, :terminal
     end
     
-    ### PRIVATE ###
+    def player(str='')
+      dir = MyFileUtils::DirectoryManager.new("#{@path}/#{world()}/#{@players_dir}")
+      if !dir.exists?
+        puterr "Player directory '#{dir.path}' not found", :terminal
+        return nil
+      end
+      
+      players=dir.ls.map{|x| x.sub(/\..*$/,'')}
+      
+      lm = ListMatch.new(players)
+      putout "#{lm.match_all(str).join("\n")}", :terminal
+      
+      return lm.match_best(str)
+    end
+    
+    #######################
+    ### PRIVATE METHODS ###
+    #######################
+    
     private
     
     def update_itemlist()
@@ -330,9 +364,19 @@ module MyServer
       end
     end
     
+    def clear_server_log()
+      log = "#{@path}/#{@server_log_file}"
+      if !File.exists?(log)
+        puterr "Server log file '#{@server_log_file}' not found"
+      else
+        FileUtils.rm(log)
+      end
+    end
+    
     def draw_map(level, name, opts="", prefix="")
       if !Dir.exists?("#{@path}/#{level}")
         puterr "World data '#{level}' does not exist", :terminal
+        return false
       end
       
       filename = "#{prefix}#{level}.#{name}.png".gsub!(/\.+/,'.')
@@ -376,23 +420,6 @@ module MyServer
     def world()
       pf = PropertiesFile.new("#{@path}/#{@properties_file}")
       return pf.get("level-name")
-    end
-    
-    def before_backup(prep_flag=false)
-      return true unless prep_flag
-      if running?
-        cmd "save-all"
-        cmd "save-off"
-      end
-      return true
-    end
-    
-    def after_backup(prep_flag=false)
-      return true unless prep_flag
-      if running?
-        cmd "save-on"
-      end
-      return true
     end
   end
   
@@ -457,6 +484,43 @@ module MyServer
         out << "#{k}#{@sep}#{v}\n"
       end
       return out
+    end
+  end
+  
+  class ListMatch
+    def initialize(a, color = true)
+      @list = a
+      @color = color
+    end
+    
+    def match_all(str)
+      arr = []
+      @list.each do |*a|
+        v = a.last
+        if v.match(/^#{str}$/i)
+          arr << "#{a.join(' ')}".tcolor(:green, @color)
+        elsif v.match(/#{str}/i)
+          arr << "#{a.join(' ')}"
+        end
+      end
+      return arr
+    end
+    
+    def match_best(str)
+      @list.each do |*a|
+        v = a.last
+        if v.match(/^#{str}$/i)
+          return "#{a.join(' ')}"
+        end
+      end
+      
+      @list.each do |*a|
+        v = a.last
+        if v.match(/#{str}/i)
+          return "#{a.join(' ')}"
+        end
+      end
+      return nil
     end
   end
 end

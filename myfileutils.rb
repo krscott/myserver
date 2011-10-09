@@ -31,7 +31,18 @@ module MyFileUtils
     attr_reader :dir
     
     def initialize(directory=Dir.pwd)
-      @dir = File.realpath(directory)
+      @dir = directory
+      @dir = File.realpath(directory) if Dir.exists?(directory)
+    end
+    
+    def exists?()
+      Dir.exists?(@dir)
+    end
+    alias :exist? :exists?
+    
+    def mkdir
+      return if exists?
+      FileUtils.mkdir_p(@dir)
     end
     
     def realpath()
@@ -53,6 +64,7 @@ module MyFileUtils
     end
     
     def children()
+      return nil if !exists?
       Dir.glob("#{dir}/*").map do |x|
         if File.directory?(x)
           self.class.new(x)
@@ -78,6 +90,7 @@ module MyFileUtils
     end
     
     def ls()
+      return nil if !exists?
       children.map do |d|
         d.inspect.sub(/#{@dir}\//,'')
       end
