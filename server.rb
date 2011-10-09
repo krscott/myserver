@@ -386,7 +386,7 @@ module MyServer
     
     def backup_files()
       if !File.directory?(data_path)
-        puterr "#{data_path} does not exist"
+        puterr "#{data_path} does not exist", :terminal
         return false
       end
       data = MyFileUtils::DirectoryManager.new(data_path)
