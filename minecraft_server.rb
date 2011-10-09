@@ -273,13 +273,6 @@ module MyServer
       else
         lm = ListMatch.new(itemlist(), term_colors)
         out << lm.match_all(str).join("\n")
-        #@itemlist.each do |k,v|
-        #  if v.match(/^#{str}$/i)
-        #    out << "#{k} #{v}".tcolor(:green, term_colors) << "\n"
-        #  elsif v.match(/#{str}/i)
-        #    out << "#{k} #{v}\n"
-        #  end
-        #end
         out << "No item '#{str}' found" if out.empty?
       end
       putout out, :terminal
@@ -498,12 +491,11 @@ module MyServer
     def match_all(str)
       arr = []
       best = match_best(str)
-      @list.each do |*a|
-        v = a.flatten.last
-        if a[0] == best and !str.strip.empty?
-          arr << "#{a.join(' ')}".tcolor(:green, @color)
-        elsif v.match(/#{str}/i)
-          arr << "#{a.join(' ')}"
+      @list.each do |a|
+        if k(a) == best and !str.strip.empty?
+          arr << "#{all(a)}".tcolor(:green, @color)
+        elsif v(a).match(/#{str}/i)
+          arr << "#{all(a)}"
         end
       end
       
@@ -511,27 +503,42 @@ module MyServer
     end
     
     def match_best(str)
-      @list.each do |*a|
-        v = a.flatten.last
-        if v.match(/^#{str}$/i)
-          return a[0]
+      @list.each do |a|
+        if v(a).match(/^#{str}$/i)
+          return k(a)
         end
       end
 
-      @list.each do |*a|
-        v = a.flatten.last
-        if v.match(/^#{str}/i)
-          return a[0]
+      @list.each do |a|
+        if v(a).match(/^#{str}/i)
+          return k(a)
         end
       end
       
-      @list.each do |*a|
-        v = a.flatten.last
-        if v.match(/#{str}/i)
-          return a[0]
+      @list.each do |a|
+        if v(a).match(/#{str}/i)
+          return k(a)
         end
       end
       return nil
+    end
+
+    def all(a)
+      return nil if a.nil?
+      return a.join(' ') if a.is_a? Array
+      return a
+    end
+
+    def k(a)
+      return nil if a.nil?
+      return a[0] if @list.is_a? Hash
+      return a
+    end
+
+    def v(a)
+      return nil if a.nil?
+      return a[1] if @list.is_a? Hash
+      return a
     end
   end
 end
