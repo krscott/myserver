@@ -263,22 +263,23 @@ module MyServer
       #putout find_item(str), :terminal
       #return
       
-      get_itemlist if @itemlist.nil?
       if str.match(/\d+/)
-        name = @itemlist[str]
+        name = itemlist[str]
         if name.nil?
           out << "No item '#{str}' found"
         else
           out << "#{str} #{name}"
         end
       else
-        @itemlist.each do |k,v|
-          if v.match(/^#{str}$/i)
-            out << "#{k} #{v}".tcolor(:green, term_colors) << "\n"
-          elsif v.match(/#{str}/i)
-            out << "#{k} #{v}\n"
-          end
-        end
+        lm = ListMatch.new(itemlist(), term_colors)
+        out << lm.match_all(str).join("\n")
+        #@itemlist.each do |k,v|
+        #  if v.match(/^#{str}$/i)
+        #    out << "#{k} #{v}".tcolor(:green, term_colors) << "\n"
+        #  elsif v.match(/#{str}/i)
+        #    out << "#{k} #{v}\n"
+        #  end
+        #end
         out << "No item '#{str}' found" if out.empty?
       end
       putout out, :terminal
@@ -311,7 +312,8 @@ module MyServer
       MinecraftItemlist.update(@itemlist_file)
     end
     
-    def get_itemlist()
+    def itemlist()
+      return @itemlist unless @itemlist.nil?
       @itemlist = {}
       if !File.exists?(@itemlist_file)
         puterr "#{@itemlist_file} not found. Please run '#{File.basename($0)} update -i'", :terminal
@@ -497,8 +499,8 @@ module MyServer
       arr = []
       best = match_best(str)
       @list.each do |*a|
-        v = a.last
-        if a[0] == best
+        v = a.flatten.last
+        if a[0] == best and !str.strip.empty?
           arr << "#{a.join(' ')}".tcolor(:green, @color)
         elsif v.match(/#{str}/i)
           arr << "#{a.join(' ')}"
@@ -510,21 +512,21 @@ module MyServer
     
     def match_best(str)
       @list.each do |*a|
-        v = a.last
+        v = a.flatten.last
         if v.match(/^#{str}$/i)
           return a[0]
         end
       end
 
       @list.each do |*a|
-        v = a.last
+        v = a.flatten.last
         if v.match(/^#{str}/i)
           return a[0]
         end
       end
       
       @list.each do |*a|
-        v = a.last
+        v = a.flatten.last
         if v.match(/#{str}/i)
           return a[0]
         end
