@@ -265,6 +265,61 @@ module MyServer
       find_player(str, true)
     end
     
+    def give(p, i, amount=1)
+      pl = find_player p
+      val = find_item i
+      if pl.nil?
+        puterr "No player matches '#{p}'", :terminal
+        return
+      end
+      if val.nil?
+        puterr "No item matches '#{i}'", :terminal
+        return
+      end
+      if amount.nil? or !amount.to_i.is_a?(Integer)
+        puterr "'#{amount}' is not an integer.", :terminal
+        return
+      end
+      c = "give #{pl} #{val} #{amount.to_i}"
+      putout c, :terminal
+      cmd c
+    end
+    
+    def tp(p1, p2)
+      pa = find_player p1
+      if pa.nil?
+        puterr "No player matches '#{p1}'", :terminal
+        return
+      end
+      
+      pb = find_player p2
+      if pb.nil?
+        puterr "No player matches '#{p2}'", :terminal
+        return
+      end
+      
+      c = "tp #{pa} #{pb}"
+      putout c, :terminal
+      cmd c
+    end
+    
+    def self.command_target_player(*args)
+      args.each do |m|
+        define_method(m) do |p, *a|
+          pl = find_player(p)
+          if pl.nil? or pl.empty?
+            puterr "No player matches '#{p}'", :terminal
+          else
+            c = "#{m} #{pl} #{a.join(' ')}"
+            putout c, :terminal
+            cmd c
+          end
+        end
+      end
+    end
+    command_target_player :tell, :gamemode, :op, :deop, :kick, :ban, :pardon
+    
+    
     #######################
     ### PRIVATE METHODS ###
     #######################
@@ -290,7 +345,11 @@ module MyServer
       end
       
       putout out, :terminal if termprint
-      return lm.match_best(str)
+      best = lm.match_best(str)
+      if best.is_a? String
+        return best.gsub(':','.')
+      end
+      return best
     end
     
     def find_player(str, termprint=false)
