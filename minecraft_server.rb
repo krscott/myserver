@@ -258,39 +258,11 @@ module MyServer
     
     def item(*a)
       str = a.join(" ")
-      out = ""
-      
-      #putout find_item(str), :terminal
-      #return
-      
-      if str.match(/\d+/)
-        name = itemlist[str]
-        if name.nil?
-          out << "No item '#{str}' found"
-        else
-          out << "#{str} #{name}"
-        end
-      else
-        lm = ListMatch.new(itemlist(), term_colors)
-        out << lm.match_all(str).join("\n")
-        out << "No item '#{str}' found" if out.empty?
-      end
-      putout out, :terminal
+      return find_item(str, true)
     end
     
     def player(str='')
-      dir = MyFileUtils::DirectoryManager.new("#{@path}/#{world()}/#{@players_dir}")
-      if !dir.exists?
-        puterr "Player directory '#{dir.path}' not found", :terminal
-        return nil
-      end
-      
-      players=dir.ls.map{|x| x.sub(/\..*$/,'')}
-      
-      lm = ListMatch.new(players)
-      putout "#{lm.match_all(str).join("\n")}", :terminal
-      
-      return lm.match_best(str)
+      find_player(str, true)
     end
     
     #######################
@@ -299,6 +271,42 @@ module MyServer
     
     private
     
+    def find_item(str, termprint=false)
+      out = ""
+      
+      lm = ListMatch.new(itemlist(), term_colors)
+
+      if str.strip.match(/^\d+$/)
+        name = itemlist[str]
+        if name.nil?
+          out << "No item '#{str}' found"
+        else
+          return str.to_i unless termprint
+          out << "#{str} #{name}"
+        end
+      elsif termprint
+        out << lm.match_all(str).join("\n")
+        out << "No item '#{str}' found" if out.empty?
+      end
+      
+      putout out, :terminal if termprint
+      return lm.match_best(str)
+    end
+    
+    def find_player(str, termprint=false)
+      dir = MyFileUtils::DirectoryManager.new("#{@path}/#{world()}/#{@players_dir}")
+      if !dir.exists?
+        puterr "Player directory '#{dir.path}' not found", :terminal
+        return nil
+      end
+      
+      players=dir.ls.map{|x| x.sub(/\..*$/,'')}
+      lm = ListMatch.new(players)
+      
+      putout "#{lm.match_all(str).join("\n")}", :terminal if termprint
+      return lm.match_best(str)
+    end
+
     def update_itemlist()
       putout "Updating item id list", :terminal
       require_relative "#{UPDATE_ITEMLIST_RB}"
@@ -317,23 +325,6 @@ module MyServer
         end
       end
       return @itemlist
-    end
-    
-    def find_item(item)
-      get_itemlist if @itemlist.nil?
-      
-      id = @itemlist.key("#{item}")
-      return id if !id.nil?
-      
-      @itemlist.each do |k,v|
-        return k if v.match(/^#{item}$/i)
-      end
-      
-      @itemlist.each do |k,v|
-        return k if v.match(/#{item}/i)
-      end
-      
-      return nil
     end
     
     def get_status()
