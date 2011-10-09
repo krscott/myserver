@@ -26,7 +26,7 @@ CUSTOM_MANAGER_OPTS = {
   
   status_file: '/var/www/mcstatus.txt',
   
-  c10t_dir: 'c10t/c10t-1.7',
+  c10t_dir: 'c10t/c10t-HEAD',
   c10t: 'c10t',
   c10t_google_api: 'google-api/google-api.sh',
   c10t_mb: 256,
@@ -456,7 +456,9 @@ module MyServer
       FileUtils.mkdir_p("#{google_map_dir}/tiles")
       
       putout "Drawing google map of '#{level}'"
-      system("bash -c \"cd #{@path}/#{@c10t_dir} && #{google_api} -w '#{@path}/#{level}' -o '#{google_map_dir}' -O '-M #{@c10t_mb}' #{opts}\"")
+      c = "bash -c \"cd #{@path}/#{@c10t_dir} && #{google_api} -w '#{@path}/#{level}' -o '#{google_map_dir}' -O '-M #{@c10t_mb}' #{opts}\""
+      c << " > /dev/null" unless @op_verbose
+      system c
     end
     
     def c10t(name, opts)
