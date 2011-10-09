@@ -495,14 +495,16 @@ module MyServer
     
     def match_all(str)
       arr = []
+      best = match_best(str)
       @list.each do |*a|
         v = a.last
-        if v.match(/^#{str}$/i)
+        if a[0] == best
           arr << "#{a.join(' ')}".tcolor(:green, @color)
         elsif v.match(/#{str}/i)
           arr << "#{a.join(' ')}"
         end
       end
+      
       return arr
     end
     
@@ -510,14 +512,21 @@ module MyServer
       @list.each do |*a|
         v = a.last
         if v.match(/^#{str}$/i)
-          return "#{a.join(' ')}"
+          return a[0]
+        end
+      end
+
+      @list.each do |*a|
+        v = a.last
+        if v.match(/^#{str}/i)
+          return a[0]
         end
       end
       
       @list.each do |*a|
         v = a.last
         if v.match(/#{str}/i)
-          return "#{a.join(' ')}"
+          return a[0]
         end
       end
       return nil
