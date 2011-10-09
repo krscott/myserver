@@ -14,12 +14,12 @@ module MyServer
     end
     
     def service()
-      raise "#Service not initialized" if @service.nil?
+      raise "Service not initialized" if @service.nil?
       return @service
     end
     
     def running?()
-      system "ps ax | grep -v grep | grep -v -i SCREEN | grep #{service} > /dev/null"
+      service_running? and screen_running?
     end
     
     def cmd(str)
@@ -29,6 +29,10 @@ module MyServer
     end
     
     private
+    
+    def service_running?()
+      system "ps ax | grep -v grep | grep -v -i SCREEN | grep #{service} > /dev/null"
+    end
     
     def screen_running?()
       system "screen -ls | grep #{@sockname} > /dev/null"
