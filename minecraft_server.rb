@@ -429,8 +429,8 @@ module MyServer
 
       levelname = level.sub(/\/#{@nether_dim}/,'.nether')
       
-      filename = "#{prefix}#{level}.#{name}.png".gsub!(/\.+/,'.')
-      historyname = "#{prefix}#{level}.#{name}.#{timestamp}.png".gsub!(/\.+/,'.')
+      filename = "#{prefix}#{levelname}.#{name}.png".gsub!(/\.+/,'.')
+      historyname = "#{prefix}#{levelname}.#{name}.#{timestamp}.png".gsub!(/\.+/,'.')
       
       putout "Drawing map #{filename}", :terminal
       img = MyFileUtils::FileManager.new( c10t(level, opts) )
@@ -466,10 +466,14 @@ module MyServer
     end
     
     def c10t(name, opts)
+      temppng = "#{@path}/#{@c10t_dir}/output.png"
+      if File.exists?(temppng)
+        FileUtils.rm(temppng)
+      end
       c = "#{@path}/#{@c10t_dir}/#{@c10t} #{opts} -M #{@c10t_mb} -w '#{@path}/#{name}' -o '#{@path}/#{@c10t_dir}/output.png'"
       c << " > /dev/null" unless @op_verbose
       system c
-      return "#{@path}/#{@c10t_dir}/output.png"
+      return temppng
     end
     
     def world()
