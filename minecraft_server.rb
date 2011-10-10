@@ -137,7 +137,7 @@ module MyServer
       end
       orig_data_dir = @data_dir
       
-      @world_list.concat( [world(), "#{world()}_nether"] ).uniq!
+      @world_list.concat( [world()] ).uniq!
       @world_list.each do |w|
         @data_dir = "#{w}"
         super()
@@ -239,7 +239,7 @@ module MyServer
             draw_map w, k, v, "."
           end
           @map_nether_calls.each do |k,v|
-            draw_map "#{w}_nether", k, v
+            draw_map "#{w}/DIM-1", k, v
           end
         end
         draw_google_map w
