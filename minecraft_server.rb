@@ -50,6 +50,7 @@ CUSTOM_MANAGER_OPTS = {
     "" => "--hell-mode",
     "isometric" => "--hell-mode --isometric",
   },
+  nether_dim: 'DIM-1',
   
   log_dir: 'logs',
 }
@@ -239,7 +240,7 @@ module MyServer
             draw_map w, k, v, "."
           end
           @map_nether_calls.each do |k,v|
-            draw_map "#{w}/DIM-1", k, v
+            draw_map "#{w}/#{@nether_dim}", k, v
           end
         end
         draw_google_map w
@@ -425,6 +426,8 @@ module MyServer
         puterr "World data '#{level}' does not exist", :terminal
         return false
       end
+
+      levelname = level.sub(/\/#{@nether_dim}/,'.nether')
       
       filename = "#{prefix}#{level}.#{name}.png".gsub!(/\.+/,'.')
       historyname = "#{prefix}#{level}.#{name}.#{timestamp}.png".gsub!(/\.+/,'.')
