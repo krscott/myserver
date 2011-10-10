@@ -449,6 +449,7 @@ module MyServer
           FileUtils.mkdir_p @op_archive
           FileUtils.cp(img.path, "#{@op_archive}/#{historyname}")
         end
+        FileUtils.rm(img.path)
       end
     end
     
