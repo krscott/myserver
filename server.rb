@@ -245,7 +245,7 @@ module MyServer
           putout "Creating backup of #{@data_dir} files..."
           if backup_files
             write_data_md5sum()
-            File.chmod('+r', @last_backup)
+            File.chmod(0522, @last_backup)
             putout "Created #{@data_dir} backup in #{@last_backup}.", :terminal
             putout "Created #{@data_dir} backup in #{File.basename(@last_backup)}.", :server
           else
