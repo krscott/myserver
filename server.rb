@@ -486,6 +486,9 @@ module MyServer
       
       @@opts ||= OptionParser.new
       @@opts.banner = "\nMore Options"
+      @@opts.on("-a", "--archive [PATH]", "create archive") do |p|
+        options[:op_archive] = (p or true)
+      end
       @@opts.on("-f", "--force", "try harder!") { options[:op_force] = true }
       @@opts.on("-v", "--verbose", "Print more output.") { options[:op_verbose] = true }
       @@opts.on("-h", "--help [METHOD]", "display in-depth help [about METHOD]") do |x|
@@ -539,5 +542,39 @@ module MyServer
       end
     end
     
+    private
+    
+    
+    def backup_files()
+      if !File.directory?(data_path)
+        puterr "#{data_path} does not exist", :terminal
+        return false
+      end
+      data = MyFileUtils::DirectoryManager.new(data_path)
+      @last_backup = data.create_backup(backup_path, @timestamp)
+      
+      new_backup = "#{backup_path}/#{data.basename}.zip"
+      FileUtils.rm new_backup if File.exists?(new_backup)
+      if !@op_archive
+        FileUtils.mv @last_backup, new_backup
+        @last_backup = new_backup
+      else
+        FileUtils.cp @last_backup, new_backup
+      end
+      return @last_backup
+    end
+    
+    def restore_files(match_file=//)
+      if !File.directory?(data_path)
+        puterr "#{data_path} does not exist"
+        return false
+      elsif !File.directory?(backup_path)
+        puterr "#{backup_path} does not exist"
+        return false
+      end
+      data = MyFileUtils::DirectoryManager.new(data_path)
+      @last_restore = data.restore_backup(backup_path, match_file)
+      return @last_restore
+    end
   end
 end

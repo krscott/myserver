@@ -120,15 +120,19 @@ module MyFileUtils
       
       b = "#{BACKUP_SEPARATOR}"
       
-      if File.exists?("#{backup_dir}/#{basename}#{b}#{stamp}#{ext}")
-        i = 1
-        while File.exists?("#{backup_dir}/#{basename}#{b}#{stamp}#{b}#{i}#{ext}")
-          i += 1
+      if stamp.nil? or stamp == false
+        return create_archive("#{backup_dir}/#{basename}#{ext}")
+      else
+        if File.exists?("#{backup_dir}/#{basename}#{b}#{stamp}#{ext}")
+          i = 1
+          while File.exists?("#{backup_dir}/#{basename}#{b}#{stamp}#{b}#{i}#{ext}")
+            i += 1
+          end
+          stamp = "#{stamp}#{b}#{i}"
         end
-        stamp = "#{stamp}#{b}#{i}"
+        
+        return create_archive("#{backup_dir}/#{basename}#{b}#{stamp}#{ext}")
       end
-      
-      return create_archive("#{backup_dir}/#{basename}#{b}#{stamp}#{ext}")
     end
     
     def restore_backup(archive=parent.dir, regex = //)

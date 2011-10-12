@@ -81,9 +81,6 @@ module MyServer
   
     def self.set_opts()
       options = super()
-      @@opts.on("-a", "--archive [PATH]", "create archive of operation output") do |p|
-        options[:op_archive] = (p or true)
-      end
       #@@opts.on("-w", "--world NAME", "Specify a world name.") do |m|
       #  options[:op_world] = m
       #end
