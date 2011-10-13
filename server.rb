@@ -563,18 +563,5 @@ module MyServer
       end
       return @last_backup
     end
-    
-    def restore_files(match_file=//)
-      if !File.directory?(data_path)
-        puterr "#{data_path} does not exist"
-        return false
-      elsif !File.directory?(backup_path)
-        puterr "#{backup_path} does not exist"
-        return false
-      end
-      data = MyFileUtils::DirectoryManager.new(data_path)
-      @last_restore = data.restore_backup(backup_path, match_file)
-      return @last_restore
-    end
   end
 end

@@ -107,7 +107,7 @@ module MyFileUtils
     def md5sum()
       sums = []
       children.each do |f|
-        sums << "#{f.md5sum}"
+        sums << "#{f.md5sum}" if f.exists? # Watch out for temp files...
       end
       sums.sort!
       return Digest::MD5.hexdigest(sums.join(''))
