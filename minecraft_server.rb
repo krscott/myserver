@@ -356,14 +356,14 @@ module MyServer
       dir = MyFileUtils::DirectoryManager.new("#{@path}/#{world()}/#{@players_dir}")
       if !dir.exists?
         puterr "Player directory '#{dir.path}' not found", :terminal
-        return nil
+        #return nil
       end
       
       players=dir.ls.map{|x| x.sub(/\..*$/,'')}
       lm = ListMatch.new(players)
       
       putout "#{lm.match_all(str).join("\n")}", :terminal if termprint
-      return lm.match_best(str)
+      return lm.match_best(str) || str
     end
 
     def update_itemlist()
@@ -375,10 +375,10 @@ module MyServer
     def itemlist()
       return @itemlist unless @itemlist.nil?
       @itemlist = {}
-      if !File.exists?(@itemlist_file)
+      if !File.exists?("#{@path}/#{@itemlist_file}")
         puterr "#{@itemlist_file} not found. Please run '#{File.basename($0)} update -i'", :terminal
       else      
-        text = MyFileUtils::FileManager.new(@itemlist_file).read
+        text = MyFileUtils::FileManager.new("#{@path}/#{@itemlist_file}").read
         text.split("\n").each do |line|
           @itemlist.store *(line.split("="))
         end
