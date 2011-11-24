@@ -135,8 +135,7 @@ module MyServer
       end
       orig_data_dir = @data_dir
       
-      @world_list.concat( [world()] ).uniq!
-      @world_list.each do |w|
+      worldlist().each do |w|
         @data_dir = "#{w}"
         super()
       end
@@ -146,12 +145,31 @@ module MyServer
       end
     end
     
-    def restore(match_file = /#{File.basename(data_path)}/)
+    def restore(match_file = nil, restore_level = nil)
+      
+      #if !restore_level.nil? and !Dir.exists?("#{@path}/#{@data_dir})
+      #  raise "World data directory '#{restore_level}' does not exist"
+      #end
+      
       orig_data_dir = @data_dir
-      @world_list.each do |w|
-        @data_dir = "#{w}"
+      
+      @data_dir = (restore_level || world())
+      
+      if match_file.nil?
+        super(/#{@data_dir}\.zip/)
+      else
         super(match_file)
       end
+      
+      #worldlist().each do |w|
+      #  @data_dir = "#{w}"
+      #  if match_file.nil?
+      #    super()
+      #  else
+      #    super(match_file)
+      #  end
+      #end
+      
       @data_dir = orig_data_dir
     end
     
@@ -476,6 +494,12 @@ module MyServer
     def world()
       pf = PropertiesFile.new("#{@path}/#{@properties_file}")
       return pf.get("level-name")
+    end
+    
+    def worldlist()
+      @world_list ||= []
+      @world_list.concat( [world()] ).uniq!
+      return @world_list
     end
   end
   

@@ -265,7 +265,7 @@ module MyServer
       return result
     end
     
-    def restore(match_file=/#{File.basename(data_path)}/)
+    def restore(match_file=/#{File.basename(data_path)}\.zip/)
       result = false
       was_running = running?
       if stop
@@ -397,9 +397,10 @@ module MyServer
     
     def restore_files(match_file=//)
       if !File.directory?(data_path)
-        puterr "#{data_path} does not exist"
-        return false
-      elsif !File.directory?(backup_path)
+        #puterr "#{data_path} does not exist"
+        #return false
+      end
+      if !File.directory?(backup_path)
         puterr "#{backup_path} does not exist"
         return false
       end
