@@ -1,11 +1,12 @@
 require 'net/http'
 require_relative 'screen_server.rb'
 
+# Requires in-script:
 UPDATE_ITEMLIST_RB = "itemlist.rb"
 
 CUSTOM_SERVER_OPTS = {
   #path: "#{HOME}/serverfiles",
-  path: "/home/minecraft/serverfiles",  # FOR TESTING PURPOSES ONLY
+  path: "/home/minecraft/serverfiles",  # Change this directory as needed.
   service: 'minecraft_server.jar',
 }
 CUSTOM_MANAGER_OPTS = {
@@ -387,7 +388,7 @@ module MyServer
     def update_itemlist()
       putout "Updating item id list", :terminal
       require_relative "#{UPDATE_ITEMLIST_RB}"
-      MinecraftItemlist.update(@itemlist_file)
+      MinecraftItemlist.update("#{@path}/#{@itemlist_file}")
     end
     
     def itemlist()
@@ -448,10 +449,14 @@ module MyServer
       historyname = "#{prefix}#{levelname}.#{name}.#{timestamp}.png".gsub!(/\.+/,'.')
       
       putout "Drawing map #{filename}", :terminal
-      img = MyFileUtils::FileManager.new( c10t(level, opts) )
+      tempimg, sout = c10t(level, opts)
+      img = MyFileUtils::FileManager.new( tempimg )
       dest = MyFileUtils::FileManager.new("#{@path}/#{@map_dir}/#{@map_current_dir}/#{filename}")
       if !img.exist?
         puterr "Map #{img.basename} was not created", :terminal
+        unless sout.nil?
+          putout sout, :terminal
+        end
       elsif dest.exists? and dest.md5sum == img.md5sum and !@op_force
         putout "Map #{filename} hasn't changed", :terminal
       else
@@ -476,8 +481,19 @@ module MyServer
       
       putout "Drawing google map of '#{level}'"
       c = "bash -c \"cd #{@path}/#{@c10t_dir} && #{google_api} -w '#{@path}/#{level}' -o '#{google_map_dir}' -O '-M #{@c10t_mb}' #{opts}\""
-      c << " > /dev/null" unless @op_verbose
-      system c
+      
+      #c << " > /dev/null" unless @op_verbose
+      #system c
+      
+      output = nil
+      if @op_verbose
+        # Real-time output
+        system c
+      else
+        # Saved output for later use
+        output = `c`
+      end
+      return output
     end
     
     def c10t(name, opts)
@@ -486,9 +502,19 @@ module MyServer
         FileUtils.rm(temppng)
       end
       c = "#{@path}/#{@c10t_dir}/#{@c10t} #{opts} -M #{@c10t_mb} -w '#{@path}/#{name}' -o '#{@path}/#{@c10t_dir}/output.png'"
-      c << " > /dev/null" unless @op_verbose
-      system c
-      return temppng
+      
+      #c << " > /dev/null" unless @op_verbose
+      #system c
+      
+      output = nil
+      if @op_verbose
+        # Real-time output
+        system c
+      else
+        # Saved output for later use
+        output = `c`
+      end
+      return temppng, output
     end
     
     def world()
