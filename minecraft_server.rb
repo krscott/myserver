@@ -491,7 +491,7 @@ module MyServer
         system c
       else
         # Saved output for later use
-        output = `c`
+        output = `#{c}`
       end
       return output
     end
@@ -512,7 +512,7 @@ module MyServer
         system c
       else
         # Saved output for later use
-        output = `c`
+        output = `#{c}`
       end
       return temppng, output
     end
