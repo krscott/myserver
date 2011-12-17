@@ -451,8 +451,8 @@ module MyServer
       img = MyFileUtils::FileManager.new( c10t(level, opts) )
       dest = MyFileUtils::FileManager.new("#{@path}/#{@map_dir}/#{@map_current_dir}/#{filename}")
       if !img.exist?
-        puterr "Map #{filename} does not exist", :terminal
-      elsif dest.exists? and dest.md5sum == img.md5sum
+        puterr "Map #{img.basename} was not created", :terminal
+      elsif dest.exists? and dest.md5sum == img.md5sum and !@op_force
         putout "Map #{filename} hasn't changed", :terminal
       else
         FileUtils.mkdir_p dest.dirname

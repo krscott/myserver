@@ -241,7 +241,7 @@ module MyServer
     def backup()
       result = false
       if before_backup
-        if data_changed?
+        if data_changed? or @op_force
           putout "Creating backup of #{@data_dir} files..."
           if backup_files
             write_data_md5sum()
