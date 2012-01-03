@@ -10,6 +10,8 @@ CUSTOM_SERVER_OPTS = {
   service: 'minecraft_server.jar',
 }
 CUSTOM_MANAGER_OPTS = {
+  autosave: false,
+  
   properties_file: 'server.properties',
   ops_file: 'ops.txt',
   banned_players_list_file: 'banned-players.txt',
@@ -62,6 +64,7 @@ module MyServer
     def start()
       cmd "#{invocation}"
       sleep 5
+      cmd "save-off" if !@autosave
       return running?
     end
     
@@ -101,7 +104,7 @@ module MyServer
     def status()
       out = get_status()
       putout out, :terminal
-      return running?
+      exit! (running?)
     end
     
     def start()
@@ -129,6 +132,10 @@ module MyServer
       super()
     end
     
+    def save()
+      cmd "save-all"
+    end
+    
     def backup()
       if running?
         cmd "save-all"
@@ -142,7 +149,7 @@ module MyServer
       end
       @data_dir = orig_data_dir
       if running?
-        cmd "save-on"
+        cmd "save-on" if @autosave
       end
     end
     
@@ -265,7 +272,7 @@ module MyServer
       putout "Finished drawing maps!"
       
       if running?
-        cmd "save-on"
+        cmd "save-on" if @autosave
       end
     end
     
@@ -479,7 +486,7 @@ module MyServer
       google_map_dir = "#{@path}/#{@map_dir}/#{@map_google_dir}/google-api-#{level}"
       FileUtils.mkdir_p("#{google_map_dir}/tiles")
       
-      putout "Drawing google map of '#{level}'"
+      putout "Drawing Google Map of '#{level}'"
       c = "bash -c \"cd #{@path}/#{@c10t_dir} && #{google_api} -w '#{@path}/#{level}' -o '#{google_map_dir}' -O '-M #{@c10t_mb}' #{opts}\""
       
       #c << " > /dev/null" unless @op_verbose
