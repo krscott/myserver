@@ -133,7 +133,13 @@ module MyServer
     end
     
     def save()
-      cmd "save-all"
+      if running?
+        putout "Server is saving."
+        cmd "save-all"
+        cmd "save-off" if !@autosave
+      else
+        putout "Attempted to save, but server not running", :terminal
+      end
     end
     
     def backup()
