@@ -262,6 +262,11 @@ module MyFileUtils
       FileUtils.cp(update_file, path)
     end
     
+    def rm()
+      FileUtils.rm(file) if exists?
+    end
+    alias :delete :rm
+    
     def md5sum()
       Digest::MD5.hexdigest(File.open(file) {|f| f.read})
     end

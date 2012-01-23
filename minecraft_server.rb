@@ -136,7 +136,7 @@ module MyServer
       if running?
         putout "Server is saving."
         cmd "save-all"
-        cmd "save-off" if !@autosave
+        #cmd "save-off" if !@autosave
       else
         putout "Attempted to save, but server not running", :terminal
       end
@@ -144,8 +144,8 @@ module MyServer
     
     def backup()
       if running?
-        cmd "save-all"
         cmd "save-off"
+        cmd "save-all"
       end
       orig_data_dir = @data_dir
       
@@ -251,8 +251,8 @@ module MyServer
       opts ||= ""
       
       if running?
-        cmd "save-off"
         cmd "save-all"
+        cmd "save-off"
       end
       
       if !name.nil?

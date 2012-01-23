@@ -30,6 +30,7 @@ module MyServer
     update_dir: "update",
     update_name: "server_update",
     update_url: nil,
+    lock_file: ".serverlock",
   }
   
   USAGE = 'Usage: #{File.basename($0)} COMMAND [OPTIONS]'
@@ -368,6 +369,37 @@ module MyServer
       "#{backup_path}/#{File.basename(data_path)}#{MD5SUM_SUFFIX}"
     end
     
+    # Lock the server files for this ServerManager
+    def lock(text="")
+      return if @my_lock
+      wait_for_unlock()
+      @my_lock = true
+      f = MyFileUtils::FileManager.new("#{server.path}/#{@lock_file}")
+      f.write "#{text}"
+    end
+    
+    # Returns true if another ServerManager process has locked the serverfiles
+    def locked?()
+      File.exists?("#{server.path}/#{@lock_file}") and !@my_lock
+    end
+    
+    def unlock()
+      wait_for_unlock()
+      f = MyFileUtils::FileManager.new("#{server.path}/#{@lock_file}")
+      f.rm
+    end
+    
+    def wait_for_unlock(timeout=-1)
+      if locked?
+        putout "Server Manager is locked.  Waiting for unlock (^C to cancel)."
+        while locked?
+          abort("Timed out") if timeout == 0
+          timeout-=1
+          sleep 1
+        end
+      end
+    end
+    
     ##### PRIVATE METHODS #####
     private
     
@@ -450,6 +482,7 @@ module MyServer
       srvc.update("#{update_file}")
       return true
     end
+    
   end
   
   class TerminalServerManager < ServerManager
