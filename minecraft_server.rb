@@ -159,8 +159,9 @@ module MyServer
     
     def backup()
       if running?
-        cmd "save-off"
         cmd "save-all"
+        sleep 5
+        cmd "save-off"
       end
       orig_data_dir = @data_dir
       
