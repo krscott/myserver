@@ -10,7 +10,7 @@ CUSTOM_SERVER_OPTS = {
   service: 'minecraft_server.jar',
 }
 CUSTOM_MANAGER_OPTS = {
-  autosave: false,
+  autosave: true,
   
   properties_file: 'server.properties',
   ops_file: 'ops.txt',
@@ -63,14 +63,28 @@ module MyServer
     
     def start()
       cmd "#{invocation}"
-      sleep 5
-      cmd "save-off" if !@autosave
+      
+      10.times do
+        break if running?
+        sleep 1
+      end
+      
+      if !@autosave
+        sleep 5
+        cmd "save-off"
+      end
+      
       return running?
     end
     
     def stop()
       cmd "stop"
-      sleep 10
+      
+      10.times do
+        break if !running?
+        sleep 1
+      end
+      
       return !running?
     end
     
