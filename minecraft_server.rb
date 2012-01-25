@@ -69,11 +69,6 @@ module MyServer
         sleep 1
       end
       
-      if !@autosave
-        sleep 5
-        cmd "save-off"
-      end
-      
       return running?
     end
     
@@ -127,6 +122,12 @@ module MyServer
         clear_server_log
       end
       super()
+      
+      if !@autosave
+        putout "Turning autosave off", :terminal
+        sleep 5
+        cmd "save-off"
+      end
     end
     
     def update()
