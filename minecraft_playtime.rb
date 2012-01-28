@@ -79,7 +79,7 @@ module PlaytimeCounter
       arr = [["#","Player", "Time", "Online?"]]
       
       array_by_time().each_with_index do |p, i|
-        arr << ["#{i}","#{p.name}", "#{format_time(p.time)}", "#{p.online? ? "*" : "" }"]
+        arr << ["#{i+1}","#{p.name}", "#{format_time(p.time)}", "#{p.online? ? "*" : "" }"]
       end
       
       sizes = []
