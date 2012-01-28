@@ -3,11 +3,12 @@ require_relative 'myfileutils.rb'
 module PlaytimeCounter
 
   class Player
-    attr_reader :name, :time
+    attr_reader :name, :time, :start_date
     def initialize(player_name, logon_time=nil)
       @name = player_name
       @time = 0
       @time_logon = logon_time
+      @start_date = logon_time
     end
     
     def online?()
@@ -16,6 +17,9 @@ module PlaytimeCounter
     
     def logon(t)
       @time_logon = t
+      if @start_date.nil? or @time_logon > @start_date
+        @start_date = @time_logon
+      end
     end
     
     def logoff(t)
@@ -67,6 +71,10 @@ module PlaytimeCounter
       @players.sort { |x,y| x.name <=> y.name }
     end
     
+    def array_by_start_date()
+      @players.sort { |x,y| x.start_date <=> y.start_date }
+    end
+    
     def plot_by_time()
       plot array_by_time()
     end
@@ -75,11 +83,15 @@ module PlaytimeCounter
       plot array_by_name()
     end
     
+    def plot_by_start_date()
+      plot array_by_start_date()
+    end
+    
     def plot(sorted_player_array=@players, sep="  ")
-      arr = [["#","Player", "Time", "Online?"]]
+      arr = [["#","Player", "Time", "Playing Since", "Online?"]]
       
       array_by_time().each_with_index do |p, i|
-        arr << ["#{i+1}","#{p.name}", "#{format_time(p.time)}", "#{p.online? ? "*" : "" }"]
+        arr << ["#{i+1}","#{p.name}", "#{format_time(p.time)}", "#{format_date(p.start_date)}", "#{p.online? ? "*" : "" }"]
       end
       
       sizes = []
@@ -114,7 +126,7 @@ module PlaytimeCounter
       if a.size > 6
         raise "Bad time string, gave #{a}"
       end
-      return Time.utc(*a).to_i
+      return Time.local(*a).to_i
     end
     
     def format_time(t)
@@ -130,6 +142,11 @@ module PlaytimeCounter
       f.map! { |x| x.to_s.rjust(2) }
       
       return "#{f[3]}d #{f[2]}h #{f[1]}m #{f[0]}s"
+    end
+    
+    def format_date(d)
+      t = Time.at(d).localtime.to_s.split(/\s/)
+      return "#{t[0]} #{t[1]}"
     end
     
     def player_connected(name, time)
