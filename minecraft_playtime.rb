@@ -17,7 +17,7 @@ module PlaytimeCounter
     
     def logon(t)
       @time_logon = t
-      if @start_date.nil? or @time_logon > @start_date
+      if @start_date.nil? or @time_logon < @start_date
         @start_date = @time_logon
       end
     end
