@@ -39,6 +39,7 @@ module PlaytimeCounter
     def new_log()
       @time_logon = nil
       @session_start = nil
+      @online = false
     end
     
     def end_count()
