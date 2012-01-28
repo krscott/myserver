@@ -3,33 +3,48 @@ require_relative 'myfileutils.rb'
 module PlaytimeCounter
 
   class Player
-    attr_reader :name, :time, :start_date
+    attr_reader :name, :time, :lifetime_start, :session_start
     def initialize(player_name, logon_time=nil)
       @name = player_name
       @time = 0
       @time_logon = logon_time
-      @start_date = logon_time
+      @lifetime_start = logon_time
+      @session_start = logon_time
+      @online = !logon_time.nil?
     end
     
     def online?()
-      !@time_logon.nil?
+      @online
     end
     
     def logon(t)
       @time_logon = t
-      if @start_date.nil? or @time_logon < @start_date
-        @start_date = @time_logon
+      if @lifetime_start.nil? or @time_logon < @lifetime_start
+        @lifetime_start = @time_logon
       end
+      if @session_start.nil? or @time_logon < @session_start
+        @session_start = @time_logon
+      end
+      @online = true
     end
     
     def logoff(t)
       return if @time_logon.nil?
       @time += (t - @time_logon)
       @time_logon = nil
+      @session_start = nil
+      @online = false
     end
     
-    def newlog()
+    def new_log()
       @time_logon = nil
+      @session_start = nil
+    end
+    
+    def end_count()
+      if online?
+        @time += (Time.now.to_i - @time_logon)
+      end
     end
   end
   
@@ -38,13 +53,16 @@ module PlaytimeCounter
     def initialize(files=[])
       @players = []
       
-      files.each do |f|
-        add_log(f)
+      unless files.empty?
+        files.each do |f|
+          add_log(f)
+        end
+        end_count
       end
     end
     
     def add_log(logfile)
-      @players.each { |p| p.newlog }
+      @players.each { |p| p.new_log }
       
       f = MyFileUtils::FileManager.new(logfile)
       f.each do |line|
@@ -63,6 +81,10 @@ module PlaytimeCounter
       end
     end
     
+    def end_count()
+      @players.each { |p| p.end_count }
+    end
+    
     def array_by_time()
       @players.sort { |x,y| y.time <=> x.time }
     end
@@ -71,8 +93,8 @@ module PlaytimeCounter
       @players.sort { |x,y| x.name <=> y.name }
     end
     
-    def array_by_start_date()
-      @players.sort { |x,y| x.start_date <=> y.start_date }
+    def array_by_lifetime_start()
+      @players.sort { |x,y| x.lifetime_start <=> y.lifetime_start }
     end
     
     def plot_by_time()
@@ -83,15 +105,23 @@ module PlaytimeCounter
       plot array_by_name()
     end
     
-    def plot_by_start_date()
-      plot array_by_start_date()
+    def plot_by_lifetime_start()
+      plot array_by_lifetime_start()
     end
     
     def plot(sorted_player_array=@players, sep="  ")
-      arr = [["#","Player", "Time", "Playing Since", "Online?"]]
+      arr = [["#","Player", "Total Time", "First Logon", "On?", "Session Time", "Session Start"]]
       
       array_by_time().each_with_index do |p, i|
-        arr << ["#{i+1}","#{p.name}", "#{format_time(p.time)}", "#{format_date(p.start_date)}", "#{p.online? ? "*" : "" }"]
+        arr << [
+          "#{i+1}",
+          "#{p.name}",
+          "#{format_time(p.time)}",
+          "#{format_date(p.lifetime_start)}", 
+          "#{p.online? ? " * " : "" }",
+          "#{p.session_start.nil? ? "" : format_time(Time.now.to_i - p.session_start)}",
+          "#{format_date(p.session_start)}",
+        ]
       end
       
       sizes = []
@@ -145,6 +175,7 @@ module PlaytimeCounter
     end
     
     def format_date(d)
+      return "" if d.nil?
       t = Time.at(d).localtime.to_s.split(/\s/)
       return "#{t[0]} #{t[1]}"
     end
