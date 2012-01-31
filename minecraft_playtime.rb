@@ -10,6 +10,7 @@ module PlaytimeCounter
       @time_logon = logon_time
       @lifetime_start = logon_time
       @session_start = logon_time
+      @last_active = logon_time
       @online = !logon_time.nil?
     end
     
@@ -29,6 +30,9 @@ module PlaytimeCounter
     end
     
     def logoff(t)
+      if @last_active.nil? or t > @last_active
+        @last_active = t
+      end
       return if @time_logon.nil?
       @time += (t - @time_logon)
       @time_logon = nil
@@ -46,6 +50,10 @@ module PlaytimeCounter
       if online?
         @time += (Time.now.to_i - @time_logon)
       end
+    end
+    
+    def last_active()
+      online? ? Time.now.to_i : @last_active
     end
   end
   
@@ -98,6 +106,10 @@ module PlaytimeCounter
       @players.sort { |x,y| x.lifetime_start <=> y.lifetime_start }
     end
     
+    def array_by_last_activity()
+      @players.sort { |x,y| y.last_active <=> x.last_active }
+    end
+    
     def plot_by_time()
       plot array_by_time()
     end
@@ -110,18 +122,23 @@ module PlaytimeCounter
       plot array_by_lifetime_start()
     end
     
+    def plot_by_last_activity()
+      plot array_by_last_activity()
+    end
+    
     def plot(sorted_player_array=@players, sep="  ")
-      arr = [["#","Player", "Total Time", "First Logon", "On?", "Session Time", "Session Start"]]
+      arr = [["#","Player", "Total Time", "On?", "Session Time", "Session Start", "Last Activity", "First Logon",]]
       
-      array_by_time().each_with_index do |p, i|
+      sorted_player_array.each_with_index do |p, i|
         arr << [
           "#{i+1}",
           "#{p.name}",
           "#{format_time(p.time)}",
-          "#{format_date(p.lifetime_start)}", 
           "#{p.online? ? " * " : "" }",
           "#{p.session_start.nil? ? "" : format_time(Time.now.to_i - p.session_start)}",
           "#{format_date(p.session_start)}",
+          "#{format_date(p.last_active)}",
+          "#{format_date(p.lifetime_start)}", 
         ]
       end
       
