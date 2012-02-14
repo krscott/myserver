@@ -187,10 +187,7 @@ module PlaytimeCounter
       #t /= 24
       #f[3] = t
       
-      f.map! { |x| x.to_s.rjust(2) }
-      
-      return "#{f[2]}h #{f[1]}m #{f[0]}s"
-      #return "#{f[3]}d #{f[2]}h #{f[1]}m #{f[0]}s"
+      return "%3dh %2dm %2ds" % f.reverse
     end
     
     def format_date(d)
