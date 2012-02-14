@@ -73,6 +73,8 @@ module MyServer
     end
     
     def stop()
+      cmd "save-on"
+      sleep 0.1
       cmd "stop"
       
       10.times do
