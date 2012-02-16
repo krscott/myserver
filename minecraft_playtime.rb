@@ -55,6 +55,10 @@ module PlaytimeCounter
     def last_active()
       online? ? Time.now.to_i : @last_active
     end
+    
+    def percentage()
+      100.0 * @time / (Time.now.to_i - @lifetime_start)
+    end
   end
   
   class Counter
@@ -127,7 +131,7 @@ module PlaytimeCounter
     end
     
     def plot(sorted_player_array=@players, sep="  ")
-      arr = [["#","Player", "Total Time", "On?", "Session Time", "Session Start", "Last Activity", "First Logon",]]
+      arr = [["#","Player", "Total Time", "On?", "Session Time", "Session Start", "Last Activity", "First Logon", "%"]]
       
       sorted_player_array.each_with_index do |p, i|
         arr << [
@@ -139,6 +143,7 @@ module PlaytimeCounter
           "#{format_date(p.session_start)}",
           "#{format_date(p.last_active)}",
           "#{format_date(p.lifetime_start)}", 
+          "%.2f\%" % p.percentage, 
         ]
       end
       
