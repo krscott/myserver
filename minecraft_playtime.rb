@@ -3,8 +3,9 @@ require_relative 'myfileutils.rb'
 module PlaytimeCounter
 
   class Player
-    attr_reader :name, :time, :lifetime_start, :session_start
-    def initialize(player_name, logon_time=nil)
+    attr_accessor :name, :time, :lifetime_start, :session_start, :online
+    attr_writer :last_active
+    def initialize(player_name="", logon_time=nil)
       @name = player_name
       @time = 0
       @time_logon = logon_time
@@ -131,21 +132,25 @@ module PlaytimeCounter
     end
     
     def plot(sorted_player_array=@players, sep="  ")
-      arr = [["#","Player", "Total Time", "On?", "Session Time", "Session Start", "Last Activity", "First Logon", "%"]]
+      arr = [get_row(0)]
+      
+      totals = Player.new "Totals"
+      n = 0
+      
+      sorted_player_array.each do |p|
+        n += 1
+        totals.time += p.time
+        totals.last_active = p.last_active if totals.last_active.nil? or totals.last_active < p.last_active
+        totals.lifetime_start = p.lifetime_start if totals.lifetime_start.nil? or totals.lifetime_start > p.lifetime_start
+        totals.online ||= p.online?
+        totals.session_start = p.session_start if totals.session_start.nil? or totals.session_start > p.session_start
+      end
       
       sorted_player_array.each_with_index do |p, i|
-        arr << [
-          "#{i+1}",
-          "#{p.name}",
-          "#{format_time(p.time)}",
-          "#{p.online? ? " * " : "" }",
-          "#{p.session_start.nil? ? "" : format_time(Time.now.to_i - p.session_start)}",
-          "#{format_date(p.session_start)}",
-          "#{format_date(p.last_active)}",
-          "#{format_date(p.lifetime_start)}", 
-          "%.2f\%" % p.percentage, 
-        ]
+        arr << get_row(i+1, p)
       end
+      
+      arr << ["--"] << get_row(n, totals)
       
       sizes = []
       arr.each do |l|
@@ -173,6 +178,24 @@ module PlaytimeCounter
     
     
     private
+    
+    def get_row(i=0, p=nil)
+      if p.nil? or i==0
+        return ["#","Player", "Total Time", "Last Activity", "First Logon", "%", "On?", "Session Time", "Session Start"]
+      end
+      
+      return [
+        "#{i}",
+        "#{p.name}",
+        "#{format_time(p.time)}",
+        "#{format_date(p.last_active)}",
+        "#{format_date(p.lifetime_start)}", 
+        "%.2f\%" % p.percentage,
+        "#{p.online? ? " * " : "" }",
+        "#{p.session_start.nil? ? "" : format_time(Time.now.to_i - p.session_start)}",
+        "#{format_date(p.session_start)}",
+      ]
+    end
     
     def convert_time(str)
       a = str.split(/[\s\-\:]/)
@@ -226,5 +249,5 @@ end
 
 if $0 == __FILE__
   include PlaytimeCounter
-  puts Counter.new(ARGV).plot_by_time()
+  puts Counter.new(ARGV).plot_by_last_activity()
 end

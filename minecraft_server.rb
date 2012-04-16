@@ -29,7 +29,7 @@ CUSTOM_MANAGER_OPTS = {
   
   status_file: '/var/www/mcstatus.txt',
   
-  c10t_dir: 'c10t/c10t-HEAD',
+  c10t_dir: 'c10t/current',
   c10t: 'c10t',
   c10t_google_api: 'google-api/google-api.sh',
   c10t_mb: 256,
