@@ -142,7 +142,9 @@ module PlaytimeCounter
         totals.time += p.time
         totals.last_active = p.last_active if totals.last_active.nil? or totals.last_active < p.last_active
         totals.lifetime_start = p.lifetime_start if totals.lifetime_start.nil? or totals.lifetime_start > p.lifetime_start
-        totals.online ||= p.online?
+        
+        next if !p.online?
+        totals.online = true
         totals.session_start = p.session_start if totals.session_start.nil? or totals.session_start > p.session_start
       end
       
