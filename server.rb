@@ -383,10 +383,12 @@ module MyServer
       f = MyFileUtils::FileManager.new("#{server.path}/#{@lock_file}")
       f.write "#{text}"
       
-      yield
-      
-      f = MyFileUtils::FileManager.new("#{server.path}/#{@lock_file}")
-      f.rm
+      begin
+        yield
+      ensure
+        f = MyFileUtils::FileManager.new("#{server.path}/#{@lock_file}")
+        f.rm
+      end
     end
     
     # Returns true if another ServerManager process has locked the serverfiles
