@@ -24,7 +24,7 @@ CUSTOM_MANAGER_OPTS = {
   server_log_backup_dir: 'serverlogs',
   
   #update_url: "s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
-  update_url: "cbukk.it/craftbukkit.jar",
+  update_url: "dl.bukkit.org/latest-rb/craftbukkit.jar",
   
   world_list: [],
   world_file: '.world',
@@ -90,7 +90,8 @@ module MyServer
     private
     
     def invocation()
-      "cd #{@path} && java -Xmx1024M -Xms1024M -jar #{@service} nogui"
+      #"cd #{@path} && java -Xmx1024M -Xms1024M -jar #{@service} nogui"
+      "cd #{@path} && java -Xmx1024M -Xms1024M -jar #{@service}"
     end
   end
   
