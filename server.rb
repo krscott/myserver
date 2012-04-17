@@ -241,70 +241,76 @@ module MyServer
     
     def backup()
       result = false
-      if before_backup
-        if data_changed? or @op_force
-          putout "Creating backup of #{@data_dir} files..."
-          if backup_files
-            write_data_md5sum()
-            File.chmod(0644, @last_backup)
-            putout "Created #{@data_dir} backup in #{@last_backup}.", :terminal
-            putout "Created #{@data_dir} backup in #{File.basename(@last_backup)}.", :server
+      lock {
+        if before_backup
+          if data_changed? or @op_force
+            putout "Creating backup of #{@data_dir} files..."
+            if backup_files
+              write_data_md5sum()
+              File.chmod(0644, @last_backup)
+              putout "Created #{@data_dir} backup in #{@last_backup}.", :terminal
+              putout "Created #{@data_dir} backup in #{File.basename(@last_backup)}.", :server
+            else
+              puterr "Failed to backup #{@data_dir} files."
+            end
           else
-            puterr "Failed to backup #{@data_dir} files."
+            putout "Data has not changed. Backup aborted."
+          end
+          if after_backup
+            result = true
+          else
+            puterr "#{self.class} failed post-backup routine."
           end
         else
-          putout "Data has not changed. Backup aborted."
+          puterr "#{self.class} failed to prepare for backup. Backup aborted."
         end
-        if after_backup
-          result = true
-        else
-          puterr "#{self.class} failed post-backup routine."
-        end
-      else
-        puterr "#{self.class} failed to prepare for backup. Backup aborted."
-      end
+      }
       return result
     end
     
     def restore(match_file=/#{File.basename(data_path)}\.zip/)
       result = false
-      was_running = running?
-      if stop
-        putout "Restoring from backup of #{@data_dir} files..."
-        if restore_files(match_file)
-          putout "Restored #{@data_dir} from backup '#{@last_restore}'", :terminal
-          putout "Restored #{@data_dir} from backup '#{File.basename(@last_restore)}'", :server
-          result = true
-        else
-          puterr "Failed to restore #{@data_dir} files."
+      lock {
+        was_running = running?
+        if stop
+          putout "Restoring from backup of #{@data_dir} files..."
+          if restore_files(match_file)
+            putout "Restored #{@data_dir} from backup '#{@last_restore}'", :terminal
+            putout "Restored #{@data_dir} from backup '#{File.basename(@last_restore)}'", :server
+            result = true
+          else
+            puterr "Failed to restore #{@data_dir} files."
+          end
+          start if was_running
         end
-        start if was_running
-      end
+      }
       return result
     end
     
     def update(custom_path=nil)
       result = false
-      was_running = running?
-      putout "Fetching #{service} update..."
-      update_file = (custom_path or fetch_update)
-      if update_file.nil?
-        puterr "Unable to fetch #{service} update."
-      elsif !File.exists?(update_file)
-        puterr "#{update_file} does not exist."
-      elsif service_matches?(update_file)
-        putout "#{service} already up to date."
-      elsif stop
-        backup
-        putout "Updating..."
-        if update_service(update_file)
-          putout "#{service} updated successfully."
-          result = true
-        else
-          puterr "#{service} update failed."
+      lock {
+        was_running = running?
+        putout "Fetching #{service} update..."
+        update_file = (custom_path or fetch_update)
+        if update_file.nil?
+          puterr "Unable to fetch #{service} update."
+        elsif !File.exists?(update_file)
+          puterr "#{update_file} does not exist."
+        elsif service_matches?(update_file)
+          putout "#{service} already up to date."
+        elsif stop
+          backup
+          putout "Updating..."
+          if update_service(update_file)
+            putout "#{service} updated successfully."
+            result = true
+          else
+            puterr "#{service} update failed."
+          end
+          start if was_running
         end
-        start if was_running
-      end
+      }
       return result
     end
     
@@ -371,11 +377,16 @@ module MyServer
     
     # Lock the server files for this ServerManager
     def lock(text="")
-      return if @my_lock
-      wait_for_unlock()
+      return unless wait_for_unlock()
+      
       @my_lock = true
       f = MyFileUtils::FileManager.new("#{server.path}/#{@lock_file}")
       f.write "#{text}"
+      
+      yield
+      
+      f = MyFileUtils::FileManager.new("#{server.path}/#{@lock_file}")
+      f.rm
     end
     
     # Returns true if another ServerManager process has locked the serverfiles
@@ -383,21 +394,20 @@ module MyServer
       File.exists?("#{server.path}/#{@lock_file}") and !@my_lock
     end
     
-    def unlock()
-      wait_for_unlock()
-      f = MyFileUtils::FileManager.new("#{server.path}/#{@lock_file}")
-      f.rm
-    end
-    
-    def wait_for_unlock(timeout=-1)
+    def wait_for_unlock(timeout=1000)
       if locked?
-        putout "Server Manager is locked.  Waiting for unlock (^C to cancel)."
-        while locked?
-          abort("Timed out") if timeout == 0
-          timeout-=1
-          sleep 1
+        begin
+          putout "Server Manager is locked.  Waiting for unlock (^C to cancel)."
+          while locked? and timeout != 0
+            timeout-=1
+            sleep 1
+          end
+        rescue
         end
+        putout "Server Manager couldn't be unlocked."
+        return false
       end
+      return true
     end
     
     ##### PRIVATE METHODS #####

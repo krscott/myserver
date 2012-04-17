@@ -121,90 +121,100 @@ module MyServer
     end
     
     def start()
-      if !running?
-        save_server_log
-        clear_server_log
-      end
-      super()
-      
-      if !@autosave
-        putout "Turning autosave off", :terminal
-        sleep 5
-        cmd "save-off"
-      end
+      lock {
+        if !running?
+          save_server_log
+          clear_server_log
+        end
+        super()
+        
+        if !@autosave
+          putout "Turning autosave off", :terminal
+          sleep 5
+          cmd "save-off"
+        end
+      }
     end
     
     def update()
-      flag = false
-      if @op_item
+      lock {
+        flag = false
+        if @op_item
+          update_itemlist
+          flag = true
+        end
+        if @op_service
+          super()
+          flag = true
+        end
+        return if flag
+        
+        # Default
         update_itemlist
-        flag = true
-      end
-      if @op_service
         super()
-        flag = true
-      end
-      return if flag
-      
-      # Default
-      update_itemlist
-      super()
+      }
     end
     
     def save()
-      if running?
-        putout "Server is saving."
-        cmd "save-all"
-        #cmd "save-off" if !@autosave
-      else
-        putout "Attempted to save, but server not running", :terminal
-      end
+      lock {
+        if running?
+          putout "Server is saving."
+          cmd "save-all"
+          #cmd "save-off" if !@autosave
+        else
+          putout "Attempted to save, but server not running", :terminal
+        end
+      }
     end
     
     def backup()
-      if running?
-        cmd "save-all"
-        sleep 5
-        cmd "save-off"
-      end
-      orig_data_dir = @data_dir
-      
-      worldlist().each do |w|
-        @data_dir = "#{w}"
-        super()
-      end
-      @data_dir = orig_data_dir
-      if running?
-        cmd "save-on" if @autosave
-      end
+      lock {
+        if running?
+          cmd "save-all"
+          sleep 5
+          cmd "save-off"
+        end
+        orig_data_dir = @data_dir
+        
+        worldlist().each do |w|
+          @data_dir = "#{w}"
+          super()
+        end
+        @data_dir = orig_data_dir
+        if running?
+          cmd "save-on" if @autosave
+        end
+      }
     end
     
     def restore(match_file = nil, restore_level = nil)
-      
-      #if !restore_level.nil? and !Dir.exists?("#{@path}/#{@data_dir})
-      #  raise "World data directory '#{restore_level}' does not exist"
-      #end
-      
-      orig_data_dir = @data_dir
-      
-      @data_dir = (restore_level || world())
-      
-      if match_file.nil?
-        super(/#{@data_dir}\.zip/)
-      else
-        super(match_file)
-      end
-      
-      #worldlist().each do |w|
-      #  @data_dir = "#{w}"
-      #  if match_file.nil?
-      #    super()
-      #  else
-      #    super(match_file)
-      #  end
-      #end
-      
-      @data_dir = orig_data_dir
+      lock {
+        
+        #if !restore_level.nil? and !Dir.exists?("#{@path}/#{@data_dir})
+        #  raise "World data directory '#{restore_level}' does not exist"
+        #end
+        
+        orig_data_dir = @data_dir
+        
+        @data_dir = (restore_level || world())
+        
+        if match_file.nil?
+          super(/#{@data_dir}\.zip/)
+        else
+          super(match_file)
+        end
+        
+        #worldlist().each do |w|
+        #  @data_dir = "#{w}"
+        #  if match_file.nil?
+        #    super()
+        #  else
+        #    super(match_file)
+        #  end
+        #end
+        
+        @data_dir = orig_data_dir
+      }
     end
     
     @@help[:property] = "Lists or sets a property value from server properties file."
@@ -267,39 +277,41 @@ module MyServer
     @@help[:map] = "Draws the current map. Use no options for default maps."
     @@help_params[:map] = "[-a [ARCHIVE]] [--googlemap] [WORLD] [NAME] [OPTIONS]"
     def map(level=nil, name=nil, opts=nil)
-      level ||= @op_map
-      opts ||= ""
-      
-      if running?
-        cmd "save-all"
-        cmd "save-off"
-      end
-      
-      if !name.nil?
-        draw_map(level, name, opts)
-      else
-        putout "Drawing maps..."
+      lock {
+        level ||= @op_map
+        opts ||= ""
         
-        unless @op_googlemap
-          w = (level or world())
-          @map_calls.each do |k,v|
-            draw_map w, k, v
-          end
-          @map_hidden_calls.each do |k,v|
-            draw_map w, k, v, "."
-          end
-          @map_nether_calls.each do |k,v|
-            draw_map "#{w}/#{@nether_dim}", k, v
-          end
+        if running?
+          cmd "save-all"
+          cmd "save-off"
         end
-        draw_google_map w
-      end
-      
-      putout "Finished drawing maps!"
-      
-      if running?
-        cmd "save-on" if @autosave
-      end
+        
+        if !name.nil?
+          draw_map(level, name, opts)
+        else
+          putout "Drawing maps..."
+          
+          unless @op_googlemap
+            w = (level or world())
+            @map_calls.each do |k,v|
+              draw_map w, k, v
+            end
+            @map_hidden_calls.each do |k,v|
+              draw_map w, k, v, "."
+            end
+            @map_nether_calls.each do |k,v|
+              draw_map "#{w}/#{@nether_dim}", k, v
+            end
+          end
+          draw_google_map w
+        end
+        
+        putout "Finished drawing maps!"
+        
+        if running?
+          cmd "save-on" if @autosave
+        end
+      }
     end
     
     def save_status()
