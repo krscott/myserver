@@ -593,7 +593,7 @@ module MyServer
     def fetch_update()
       #curl [URL] -s -L -I -o /dev/null -w '%{url_effective}'
       if !@update_url.nil?
-        @update_url = `curl #{@update_url} -s -L -I -o /dev/null -w '%{url_effective}'`
+        @update_url = `curl #{@update_url} -s -L -I -o /dev/null -w '%{url_effective}'`.sub('http://','')
       end
       
       super
