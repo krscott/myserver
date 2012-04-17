@@ -7,7 +7,8 @@ UPDATE_ITEMLIST_RB = "itemlist.rb"
 CUSTOM_SERVER_OPTS = {
   #path: "#{HOME}/serverfiles",
   path: "/home/minecraft/serverfiles",  # Change this directory as needed.
-  service: 'minecraft_server.jar',
+  #service: 'minecraft_server.jar',
+  service: 'craftbukkit.jar',
 }
 CUSTOM_MANAGER_OPTS = {
   autosave: true,
@@ -22,7 +23,8 @@ CUSTOM_MANAGER_OPTS = {
   
   server_log_backup_dir: 'serverlogs',
   
-  update_url: "s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
+  #update_url: "s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
+  update_url: "http://cbukk.it/craftbukkit.jar",
   
   world_list: [],
   world_file: '.world',
