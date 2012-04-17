@@ -590,6 +590,14 @@ module MyServer
     
     private
     
+    def fetch_update()
+      #curl [URL] -s -L -I -o /dev/null -w '%{url_effective}'
+      if !@update_url.nil?
+        @update_url = `curl #{@update_url} -s -L -I -o /dev/null -w '%{url_effective}'`
+      end
+      
+      super
+    end
     
     def backup_files()
       if !File.directory?(data_path)
