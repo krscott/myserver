@@ -399,7 +399,7 @@ module MyServer
     def wait_for_unlock(timeout=1000)
       if locked?
         begin
-          putout "Server Manager is locked.  Waiting for unlock (^C to cancel)."
+          putout "Server Manager is locked.  Waiting for unlock (^C to cancel).", :terminal
           while locked? and timeout != 0
             timeout-=1
             sleep 1
