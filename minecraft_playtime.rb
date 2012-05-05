@@ -80,7 +80,7 @@ module PlaytimeCounter
       
       f = MyFileUtils::FileManager.new(logfile)
       f.each do |line|
-        if line.match(/logged in|lost connection/) and line.match(/\[INFO\] [^\s\<\>]+ /) # [INFO] playername
+        if line.match(/logged in|lost connection/) and line.match(/\[INFO\] [^\/\s\<\>]+ /) # [INFO] playername
           t = line.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/).to_s
           s = convert_time(t)
           p = line.split(/\s/)[3]
