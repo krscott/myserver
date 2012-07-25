@@ -443,18 +443,20 @@ module MyServer
     end
 
     def update_plugin(path)
-      if !path.match(/\.jar$/)
-        puterr "Could not update plugin; '#{path}' is not a .jar file!", :terminal
-        return
-      end
 
-      target = "#{@path}/#{@plugin_update_dir}/#{path.gsub(/^.*\//, '')}"
+      target_dir = MyFileUtils::DirectoryManager.new("#{@path}/#{@plugin_update_dir}")
+      target = "#{target_dir.path}/#{path.gsub(/^.*\//, '')}"
 
       if File.exists?(target)
-        File.rm(target)
+        FileUtils.rm(target)
       end
 
-      File.mv(path, target);
+      FileUtils.mv(path, target);
+
+      # Unzip zip files
+      if (target.match(/\.zip$/))
+        target_dir.restore_archive(target)
+      end
 
       target_name = target.gsub(/^.*\//, '')
       if File.exists?(target)
@@ -464,10 +466,10 @@ module MyServer
       end
     end
 
-    def update_plugins(name)
+    def update_plugins(name=nil)
 
       # Use exact path if given
-      if !name.nil? and File.exists?(name) and name.match(/\.jar$/)
+      if !name.nil? and File.exists?(name)
         update_plugin(name)
         return
       end
@@ -475,28 +477,18 @@ module MyServer
       pdir = MyFileUtils::DirectoryManager.new("#{@path}/#{@plugin_update_dir}")
 
       if !pdir.exists?
-        putout "Update directory doesn't exist."
+        putout "Plugin update directory doesn't exist."
         return
       end
 
-      zips = pdir.children.map(&:inspect).select {|f| f.match(/\.zip$/)}
-
-      # Unzip archives if applicable
-      if !name.nil?
-        zips.select!{ |f| f.match(/#{name}[^\.\/]*\.zip$)/) }
-      end
-      zips.each do |f|
-        pdir.restore_archive(f);
-      end
-
-      # Move updates to real folder
-      jars = pdir.children.map(&:inspect).select { |f| f.match(/\.jar$/) }
+      # Move updates to real plugin folder
+      files = pdir.children.map(&:inspect).select { |f| f.match(/\.jar$/) or f.match(/\.zip$/) }
       if name.nil?
-        jars.each do |f|
+        files.each do |f|
           update_plugin(f)
         end
       else
-        jars.each do |f|
+        files.each do |f|
           if f.match(/#{name}/)
             update_plugin(f)
           end
