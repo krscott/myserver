@@ -12,35 +12,38 @@ CUSTOM_SERVER_OPTS = {
 }
 CUSTOM_MANAGER_OPTS = {
   autosave: true,
-  
+
   properties_file: 'server.properties',
   ops_file: 'ops.txt',
   banned_players_list_file: 'banned-players.txt',
   server_log_file: 'server.log',
   itemlist_file: 'itemlist.txt',
-  
+
   players_dir: 'players',
-  
+
+  plugin_dir: 'plugins',
+	plugin_update_dir: 'bukkit_update/plugins',
+
   server_log_backup_dir: 'serverlogs',
-  
+
   #update_url: "s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
   update_url: "dl.bukkit.org/latest-rb/craftbukkit.jar",
-  
+
   world_list: [],
   world_file: '.world',
-  
+
   status_file: '/var/www/mcstatus.txt',
-  
+
   c10t_dir: 'c10t/current',
   c10t: 'c10t',
   c10t_google_api: 'google-api/google-api.sh',
   c10t_mb: 256,
-  
+
   map_dir: 'maps',
   map_current_dir: 'current',
   map_history_dir: 'history',
   map_google_dir: 'googlemap',
-  
+
   map_calls: {
     "day" => "",
     "night" => "--night",
@@ -48,7 +51,7 @@ CUSTOM_MANAGER_OPTS = {
     "isometric.night" => "--night --isometric",
     "height" => "--heightmap",
   },
-  map_hidden_calls: { 
+  map_hidden_calls: {
     "cave" => "--cave-mode",
   },
   map_nether_calls: {
@@ -56,47 +59,47 @@ CUSTOM_MANAGER_OPTS = {
     "isometric" => "--hell-mode --isometric",
   },
   nether_dim: 'DIM-1',
-  
+
   log_dir: 'logs',
 }
 
 module MyServer
   class MinecraftServer < ScreenServer
-    
+
     def start()
       cmd "#{invocation}"
-      
+
       10.times do
         break if running?
         sleep 1
       end
-      
+
       return running?
     end
-    
+
     def stop()
       cmd "save-on"
       sleep 0.1
       cmd "stop"
-      
+
       10.times do
         break if !running?
         sleep 1
       end
-      
+
       return !running?
     end
-    
+
     private
-    
+
     def invocation()
       #"cd #{@path} && java -Xmx1024M -Xms1024M -jar #{@service} nogui"
       "cd #{@path} && java -Xmx1024M -Xms1024M -jar #{@service}"
     end
   end
-  
+
   class MinecraftManager < TerminalServerManager
-  
+
     def self.set_opts()
       options = super()
       #@@opts.on("-w", "--world NAME", "Specify a world name.") do |m|
@@ -111,16 +114,19 @@ module MyServer
       @@opts.on("-s","--service [JAR]", "Select service") do |x|
         options[:op_service] = (x or true)
       end
-      
+			@@opts.on("-p","--plugin [PLUGIN]", "Select plugin") do |x|
+				options[:op_plugin] = (x or true)
+			end
+
       return options
     end
-    
+
     def status()
       out = get_status()
       putout out, :terminal
       exit! (running?)
     end
-    
+
     def start()
       lock {
         if !running?
@@ -128,7 +134,7 @@ module MyServer
           clear_server_log
         end
         super()
-        
+
         if !@autosave
           putout "Turning autosave off", :terminal
           sleep 5
@@ -136,7 +142,7 @@ module MyServer
         end
       }
     end
-    
+
     def update()
       lock {
         flag = false
@@ -148,14 +154,19 @@ module MyServer
           super()
           flag = true
         end
+				if @op_plugin
+					update_plugins(@op_plugin==true ? nil : @op_plugin)
+					flag = true
+				end
         return if flag
-        
+
         # Default
         update_itemlist
+        update_plugins
         super()
       }
     end
-    
+
     def save()
       lock {
         if running?
@@ -167,7 +178,7 @@ module MyServer
         end
       }
     end
-    
+
     def backup()
       lock {
         if running?
@@ -176,7 +187,7 @@ module MyServer
           cmd "save-off"
         end
         orig_data_dir = @data_dir
-        
+
         worldlist().each do |w|
           @data_dir = "#{w}"
           super()
@@ -187,24 +198,24 @@ module MyServer
         end
       }
     end
-    
+
     def restore(match_file = nil, restore_level = nil)
       lock {
-        
+
         #if !restore_level.nil? and !Dir.exists?("#{@path}/#{@data_dir})
         #  raise "World data directory '#{restore_level}' does not exist"
         #end
-        
+
         orig_data_dir = @data_dir
-        
+
         @data_dir = (restore_level || world())
-        
+
         if match_file.nil?
           super(/#{@data_dir}\.zip/)
         else
           super(match_file)
         end
-        
+
         #worldlist().each do |w|
         #  @data_dir = "#{w}"
         #  if match_file.nil?
@@ -213,11 +224,11 @@ module MyServer
         #    super(match_file)
         #  end
         #end
-        
+
         @data_dir = orig_data_dir
       }
     end
-    
+
     @@help[:property] = "Lists or sets a property value from server properties file."
     @@help_params[:property] = "[add|remove] [property [value]]"
     def property(*a)
@@ -234,7 +245,7 @@ module MyServer
       else
         p, v = a[0], a[1]
       end
-      
+
       pf = PropertiesFile.new("#{@path}/#{@properties_file}")
       if p.nil?
         puts pf.prop_text
@@ -267,31 +278,31 @@ module MyServer
             putout "Changed '#{p}' from '#{oldv}' to '#{pf.get(p)}'", :terminal
           end
         end
-        
+
         return pf.get(p)
       end
-      
+
     end
     [@@help, @@help_params].each { |h| h[:prop] = h[:property] }
     alias :prop :property
-    
+
     @@help[:map] = "Draws the current map. Use no options for default maps."
     @@help_params[:map] = "[-a [ARCHIVE]] [--googlemap] [WORLD] [NAME] [OPTIONS]"
     def map(level=nil, name=nil, opts=nil)
       lock {
         level ||= @op_map
         opts ||= ""
-        
+
         if running?
           cmd "save-all"
           cmd "save-off"
         end
-        
+
         if !name.nil?
           draw_map(level, name, opts)
         else
           putout "Drawing maps..."
-          
+
           unless @op_googlemap
             w = (level or world())
             @map_calls.each do |k,v|
@@ -306,30 +317,30 @@ module MyServer
           end
           draw_google_map w
         end
-        
+
         putout "Finished drawing maps!"
-        
+
         if running?
           cmd "save-on" if @autosave
         end
       }
     end
-    
+
     def save_status()
       out = get_status()
       f = MyFileUtils::FileManager.new(@status_file)
       f.write(out) if f.exists?
     end
-    
+
     def item(*a)
       str = a.join(" ")
       return find_item(str, true)
     end
-    
+
     def player(str='')
       find_player(str, true)
     end
-    
+
     def give(p, i, amount=1)
       pl = find_player p
       val = find_item i
@@ -349,25 +360,25 @@ module MyServer
       putout c, :terminal
       cmd c
     end
-    
+
     def tp(p1, p2)
       pa = find_player p1
       if pa.nil?
         puterr "No player matches '#{p1}'", :terminal
         return
       end
-      
+
       pb = find_player p2
       if pb.nil?
         puterr "No player matches '#{p2}'", :terminal
         return
       end
-      
+
       c = "tp #{pa} #{pb}"
       putout c, :terminal
       cmd c
     end
-    
+
     def self.command_target_player(*args)
       args.each do |m|
         define_method(m) do |p, *a|
@@ -383,17 +394,17 @@ module MyServer
       end
     end
     command_target_player :tell, :gamemode, :op, :deop, :kick, :ban, :pardon
-    
-    
+
+
     #######################
     ### PRIVATE METHODS ###
     #######################
-    
+
     private
-    
+
     def find_item(str, termprint=false)
       out = ""
-      
+
       lm = ListMatch.new(itemlist(), term_colors)
 
       if str.strip.match(/^\d+$/)
@@ -408,7 +419,7 @@ module MyServer
         out << lm.match_all(str).join("\n")
         out << "No item '#{str}' found" if out.empty?
       end
-      
+
       putout out, :terminal if termprint
       best = lm.match_best(str)
       if best.is_a? String
@@ -416,19 +427,81 @@ module MyServer
       end
       return best
     end
-    
+
     def find_player(str, termprint=false)
       dir = MyFileUtils::DirectoryManager.new("#{@path}/#{world()}/#{@players_dir}")
       if !dir.exists?
         puterr "Player directory '#{dir.path}' not found", :terminal
         #return nil
       end
-      
+
       players=dir.ls.map{|x| x.sub(/\..*$/,'')}
       lm = ListMatch.new(players)
-      
+
       putout "#{lm.match_all(str).join("\n")}", :terminal if termprint
       return lm.match_best(str) || str
+    end
+
+    def update_plugin(path)
+      if !path.match(/\.jar$/)
+        puterr "Could not update plugin; '#{path}' is not a .jar file!", :terminal
+        return
+      end
+
+      target = "#{@path}/#{@plugin_update_dir}/#{path.gsub(/^.*\//, '')}"
+
+      if File.exists?(target)
+        File.rm(target)
+      end
+
+      File.mv(path, target);
+
+      target_name = target.gsub(/^.*\//, '')
+      if File.exists?(target)
+        putout "Updated plugin #{target_name}"
+      else
+        puterr "Could not update #{target_name}!"
+      end
+    end
+
+    def update_plugins(name)
+
+      # Use exact path if given
+      if !name.nil? and File.exists?(name) and name.match(/\.jar$/)
+        update_plugin(name)
+        return
+      end
+
+      pdir = MyFileUtils::DirectoryManager.new("#{@path}/#{@plugin_update_dir}")
+
+      if !pdir.exists?
+        putout "Update directory doesn't exist."
+        return
+      end
+
+      zips = pdir.children.map(&:inspect).select {|f| f.match(/\.zip$/)}
+
+      # Unzip archives if applicable
+      if !name.nil?
+        zips.select!{ |f| f.match(/#{name}[^\.\/]*\.zip$)/) }
+      end
+      zips.each do |f|
+        pdir.restore_archive(f);
+      end
+
+      # Move updates to real folder
+      jars = pdir.children.map(&:inspect).select { |f| f.match(/\.jar$/) }
+      if name.nil?
+        jars.each do |f|
+          update_plugin(f)
+        end
+      else
+        jars.each do |f|
+          if f.match(/#{name}/)
+            update_plugin(f)
+          end
+        end
+      end
     end
 
     def update_itemlist()
@@ -436,13 +509,13 @@ module MyServer
       require_relative "#{UPDATE_ITEMLIST_RB}"
       MinecraftItemlist.update("#{@path}/#{@itemlist_file}")
     end
-    
+
     def itemlist()
       return @itemlist unless @itemlist.nil?
       @itemlist = {}
       if !File.exists?("#{@path}/#{@itemlist_file}")
         puterr "#{@itemlist_file} not found. Please run '#{File.basename($0)} update -i'", :terminal
-      else      
+      else
         text = MyFileUtils::FileManager.new("#{@path}/#{@itemlist_file}").read
         text.split("\n").each do |line|
           @itemlist.store *(line.split("="))
@@ -450,7 +523,7 @@ module MyServer
       end
       return @itemlist
     end
-    
+
     def get_status()
       if running?
         return "#{service} is running on world '#{world}'."
@@ -458,7 +531,7 @@ module MyServer
         return "#{service} is not running."
       end
     end
-    
+
     def save_server_log()
       log = "#{@path}/#{@server_log_file}"
       if !File.exists?(log)
@@ -473,7 +546,7 @@ module MyServer
         #MyFileUtils::FileManager.new(log).write("")
       end
     end
-    
+
     def clear_server_log()
       log = "#{@path}/#{@server_log_file}"
       if !File.exists?(log)
@@ -482,7 +555,7 @@ module MyServer
         FileUtils.rm(log)
       end
     end
-    
+
     def draw_map(level, name, opts="", prefix="")
       if !Dir.exists?("#{@path}/#{level}")
         puterr "World data '#{level}' does not exist", :terminal
@@ -490,10 +563,10 @@ module MyServer
       end
 
       levelname = level.sub(/\/#{@nether_dim}/,'.nether')
-      
+
       filename = "#{prefix}#{levelname}.#{name}.png".gsub!(/\.+/,'.')
       historyname = "#{prefix}#{levelname}.#{name}.#{timestamp}.png".gsub!(/\.+/,'.')
-      
+
       putout "Drawing map #{filename}", :terminal
       tempimg, sout = c10t(level, opts)
       img = MyFileUtils::FileManager.new( tempimg )
@@ -518,19 +591,19 @@ module MyServer
         FileUtils.rm(img.path)
       end
     end
-    
+
     def draw_google_map(level=nil, opts="")
       level ||= world()
       google_api = "#{@path}/#{@c10t_dir}/#{@c10t_google_api}"
       google_map_dir = "#{@path}/#{@map_dir}/#{@map_google_dir}/google-api-#{level}"
       FileUtils.mkdir_p("#{google_map_dir}/tiles")
-      
+
       putout "Drawing Google Map of '#{level}'"
       c = "bash -c \"cd #{@path}/#{@c10t_dir} && #{google_api} -w '#{@path}/#{level}' -o '#{google_map_dir}' -O '-M #{@c10t_mb}' #{opts}\""
-      
+
       #c << " > /dev/null" unless @op_verbose
       #system c
-      
+
       output = nil
       if @op_verbose
         # Real-time output
@@ -541,17 +614,17 @@ module MyServer
       end
       return output
     end
-    
+
     def c10t(name, opts)
       temppng = "#{@path}/#{@c10t_dir}/output.png"
       if File.exists?(temppng)
         FileUtils.rm(temppng)
       end
       c = "#{@path}/#{@c10t_dir}/#{@c10t} #{opts} -M #{@c10t_mb} -w '#{@path}/#{name}' -o '#{@path}/#{@c10t_dir}/output.png'"
-      
+
       #c << " > /dev/null" unless @op_verbose
       #system c
-      
+
       output = nil
       if @op_verbose
         # Real-time output
@@ -562,19 +635,19 @@ module MyServer
       end
       return temppng, output
     end
-    
+
     def world()
       pf = PropertiesFile.new("#{@path}/#{@properties_file}")
       return pf.get("level-name")
     end
-    
+
     def worldlist()
       @world_list ||= []
       @world_list.concat( [world()] ).uniq!
       return @world_list
     end
   end
-  
+
   class PropertiesFile
     attr_reader :props, :comments, :file_manager, :text
     def initialize(file, sep="=", comment="#")
@@ -582,22 +655,22 @@ module MyServer
       @com = comment
       @file_manager = MyFileUtils::FileManager.new(file)
     end
-    
+
     def get(p)
       read
       return @props[p.to_sym]
     end
-    
+
     def set(p,v)
       @props[p.to_sym] = v.to_s
       write
     end
-    
+
     def remove(p)
       @props.reject! {|k,v| k==p.to_sym}
       write
     end
-    
+
     def read
       @text = @file_manager.read.gsub(/\r/,'')
       @comments = []
@@ -612,14 +685,14 @@ module MyServer
         end
       end
     end
-    
+
     def write
       @text = ""
       @text << comment_text
       @text << prop_text
       @file_manager.write @text
     end
-    
+
     def comment_text
       read if @comments.nil?
       out = ""
@@ -628,7 +701,7 @@ module MyServer
       end
       return out
     end
-    
+
     def prop_text
       read if @text.nil?
       out = ""
@@ -638,13 +711,13 @@ module MyServer
       return out
     end
   end
-  
+
   class ListMatch
     def initialize(a, color = true)
       @list = a
       @color = color
     end
-    
+
     def match_all(str)
       arr = []
       best = match_best(str)
@@ -655,10 +728,10 @@ module MyServer
           arr << "#{all(a)}"
         end
       end
-      
+
       return arr
     end
-    
+
     def match_best(str)
       @list.each do |a|
         if v(a).match(/^#{str}$/i)
@@ -671,7 +744,7 @@ module MyServer
           return k(a)
         end
       end
-      
+
       @list.each do |a|
         if v(a).match(/#{str}/i)
           return k(a)
