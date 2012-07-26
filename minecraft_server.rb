@@ -457,7 +457,7 @@ module MyServer
       end
 
       FileUtils.mkdir_p(target_dir.path)
-      FileUtils.cp(plugin, target_dir.path)
+      FileUtils.mv(plugin, target_dir.path)
 
       # Unzip zip files
       if (target.match(/\.zip$/))
