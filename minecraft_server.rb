@@ -442,16 +442,21 @@ module MyServer
       return lm.match_best(str) || str
     end
 
-    def update_plugin(path)
+    def update_plugin(plugin)
+
+      if !File.exists(plugin)
+        puterr "File not found: #{plugin}", :terminal
+        return
+      end
 
       target_dir = MyFileUtils::DirectoryManager.new("#{@path}/#{@plugin_update_dir}")
-      target = "#{target_dir.path}/#{path.gsub(/^.*\//, '')}"
+      target = "#{target_dir.path}/#{plugin.gsub(/^.*\//, '')}"
 
       if File.exists?(target)
         FileUtils.rm(target)
       end
 
-      FileUtils.mv(path, target);
+      FileUtils.mv(plugin, target);
 
       # Unzip zip files
       if (target.match(/\.zip$/))
