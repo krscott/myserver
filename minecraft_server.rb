@@ -488,16 +488,23 @@ module MyServer
       end
 
       # Move updates to real plugin folder
+
       files = pdir.children.map(&:inspect).select { |f| f.match(/\.jar$/) or f.match(/\.zip$/) }
+
       if name.nil?
+        if files.empty?
+          putout "All plugins are up-to-date!", :terminal
+        end
         files.each do |f|
           update_plugin(f)
         end
       else
+        files.select! {f.match(/#{name}/)}
+        if files.empty?
+          putout "All plugins that match '#{name}' are up-to-date!", :terminal
+        end
         files.each do |f|
-          if f.match(/#{name}/)
-            update_plugin(f)
-          end
+          update_plugin(f)
         end
       end
     end
