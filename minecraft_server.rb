@@ -27,7 +27,8 @@ CUSTOM_MANAGER_OPTS = {
   server_log_backup_dir: 'serverlogs',
 
   #update_url: "s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
-  update_url: "dl.bukkit.org/latest-rb/craftbukkit.jar",
+  #update_url: "dl.bukkit.org/latest-rb/craftbukkit.jar",
+  update_dir: 'bukkit_update',
 
   world_list: [],
   world_file: '.world',
