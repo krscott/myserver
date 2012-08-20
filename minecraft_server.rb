@@ -29,6 +29,7 @@ CUSTOM_MANAGER_OPTS = {
   #update_url: "s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar",
   #update_url: "dl.bukkit.org/latest-rb/craftbukkit.jar",
   update_dir: 'bukkit_update',
+  update_name: 'craftbukkit.jar',
 
   world_list: [],
   world_file: '.world',
